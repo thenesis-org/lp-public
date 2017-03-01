@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=CTF
+Type=Application
+Exec=quake2-gles1 +set game ctf
+Icon=ctf
+Comment=Quake 2 - Capture The Flag
+Terminal=false
+Categories=games;
+X-OD-Manual=manual-gcw0.txt

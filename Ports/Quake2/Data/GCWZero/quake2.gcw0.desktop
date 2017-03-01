@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Quake 2
+Type=Application
+Exec=quake2-gles1
+Icon=quake2
+Comment=Quake 2
+Terminal=false
+Categories=games;
+X-OD-Manual=manual-gcw0.txt

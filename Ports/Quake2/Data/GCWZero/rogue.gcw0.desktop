@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Ground Zero
+Type=Application
+Exec=quake2-gles1 +set game rogue
+Icon=rogue
+Comment=Quake 2 - Ground Zero mission pack
+Terminal=false
+Categories=games;
+X-OD-Manual=manual-gcw0.txt

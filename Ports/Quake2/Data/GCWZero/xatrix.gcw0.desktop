@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=The Reckoning
+Type=Application
+Exec=quake2-gles1 +set game xatrix
+Icon=xatrix.png
+Comment=Quake 2 - The Reckoning mission pack
+Terminal=false
+Categories=games;
+X-OD-Manual=manual-gcw0.txt
