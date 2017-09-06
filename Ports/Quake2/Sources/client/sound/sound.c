@@ -28,7 +28,7 @@
  * =======================================================================
  */
 
-#include "backends/generic/qal.h"
+#include "backends/qal.h"
 #include "client/client.h"
 #include "client/sound/local.h"
 #include "client/sound/vorbis.h"
@@ -1043,7 +1043,7 @@ void S_Init(void)
  * Shutdown the sound system
  * and it's backend
  */
-void S_Shutdown(void)
+void S_Shutdown()
 {
 	int i;
 	sfx_t *sfx;

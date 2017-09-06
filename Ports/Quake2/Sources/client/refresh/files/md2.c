@@ -57,8 +57,7 @@ LoadMD2(model_t *mod, void *buffer)
 
 	if (pheader->skinheight > MAX_LBM_HEIGHT)
 	{
-		VID_Error(ERR_DROP, "model %s has a skin taller than %d", mod->name,
-				MAX_LBM_HEIGHT);
+		VID_Error(ERR_DROP, "model %s has a skin taller than %d", mod->name, MAX_LBM_HEIGHT);
 	}
 
 	if (pheader->num_xyz <= 0)

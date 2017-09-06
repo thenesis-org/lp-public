@@ -7,6 +7,72 @@ SdlwContext *sdlwContext = NULL;
 
 //SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK
 
+static void sdlwLogOutputFunction(void *userdata, int category, SDL_LogPriority priority, const char *message)
+{
+    const char *categoryString = "";
+    switch (category)
+    {
+    default:
+        categoryString = "unknown";
+        break;
+    case SDL_LOG_CATEGORY_APPLICATION:
+        categoryString = "application";
+        break;
+    case SDL_LOG_CATEGORY_ERROR:
+        categoryString = "error";
+        break;
+    case SDL_LOG_CATEGORY_ASSERT:
+        categoryString = "assert";
+        break;
+    case SDL_LOG_CATEGORY_SYSTEM:
+        categoryString = "system";
+        break;
+    case SDL_LOG_CATEGORY_AUDIO:
+        categoryString = "audio";
+        break;
+    case SDL_LOG_CATEGORY_VIDEO:
+        categoryString = "video";
+        break;
+    case SDL_LOG_CATEGORY_RENDER:
+        categoryString = "render";
+        break;
+    case SDL_LOG_CATEGORY_INPUT:
+        categoryString = "input";
+        break;
+    case SDL_LOG_CATEGORY_TEST:
+        categoryString = "test";
+        break;
+    }
+
+    const char *priorityString = "unknown";
+    switch (priority)
+    {
+    default:
+        priorityString = "unknown";
+        break;
+    case SDL_LOG_PRIORITY_VERBOSE:
+        priorityString = "verbose";
+        break;
+    case SDL_LOG_PRIORITY_DEBUG:
+        priorityString = "debug";
+        break;
+    case SDL_LOG_PRIORITY_INFO:
+        priorityString = "info";
+        break;
+    case SDL_LOG_PRIORITY_WARN:
+        priorityString = "warn";
+        break;
+    case SDL_LOG_PRIORITY_ERROR:
+        priorityString = "error";
+        break;
+    case SDL_LOG_PRIORITY_CRITICAL:
+        priorityString = "critical";
+        break;
+    }
+    
+    printf("SDL - %s - %s - %s", categoryString, priorityString, message);
+}
+
 bool sdlwInitialize(SdlProcessEventFunction processEvent, Uint32 flags) {
     sdlwFinalize();
     
@@ -24,6 +90,9 @@ bool sdlwInitialize(SdlProcessEventFunction processEvent, Uint32 flags) {
         printf("Unable to initialize SDL: %s\n", SDL_GetError());
         goto on_error;
     }
+    
+    SDL_LogSetOutputFunction(sdlwLogOutputFunction, NULL);
+//    SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Test\n");
     
 //    if (SDL_NumJoysticks() > 0) SDL_JoystickOpen(0);
     

@@ -20,17 +20,17 @@ ifndef RESCOMP
 endif
 
 ifeq ($(config),release)
-  OBJDIR     = ../../../Output/Targets/Generic/Release/obj/quake2-gles1
-  TARGETDIR  = ../../../Output/Targets/Generic/Release/bin
+  OBJDIR     = ../../../Output/Targets/GCWZero/Release/obj/quake2-gles1
+  TARGETDIR  = ../../../Output/Targets/GCWZero/Release/bin
   TARGET     = $(TARGETDIR)/quake2-gles1
-  DEFINES   += -D__GCW_ZERO__ -DARCH=\"i386\" -DOSTYPE=\"Linux\" -DNOUNCRYPT -DZIP -DGLES1 -D_GNU_SOURCE=1 -DEGLW_GLES1
+  DEFINES   += -D__GCW_ZERO__ -DARCH=\"i386\" -DOSTYPE=\"Linux\" -DNOUNCRYPT -DZIP -D_GNU_SOURCE=1 -DEGLW_GLES1
   INCLUDES  += -I../../../../../Engine/External/include -I../../../Sources -I../../../../../Engine/Sources/Compatibility -I../../../../../Engine/Sources/Compatibility/OpenGLES/Includes
   ALL_CPPFLAGS  += $(CPPFLAGS) -MMD -MP $(DEFINES) $(INCLUDES)
   ALL_CFLAGS    += $(CFLAGS) $(ALL_CPPFLAGS) $(ARCH) -ffast-math -Wall -Wextra -O2 -std=c99 -Wno-unused-function -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-switch -Wno-missing-field-initializers -fPIC -fvisibility=hidden
   ALL_CXXFLAGS  += $(CXXFLAGS) $(ALL_CFLAGS)
   ALL_RESFLAGS  += $(RESFLAGS) $(DEFINES) $(INCLUDES)
-  ALL_LDFLAGS   += $(LDFLAGS) -L../../../Output/Targets/Generic/Release/lib -L. -s
-  LDDEPS    += ../../../Output/Targets/Generic/Release/lib/libZLib.a
+  ALL_LDFLAGS   += $(LDFLAGS) -L../../../Output/Targets/GCWZero/Release/lib -L. -s
+  LDDEPS    += ../../../Output/Targets/GCWZero/Release/lib/libZLib.a
   LIBS      += $(LDDEPS) -lm -ldl -lGLESv1_CM -lEGL -lSDL2main -lSDL2
   LINKCMD    = $(CC) -o $(TARGET) $(OBJECTS) $(RESOURCES) $(ARCH) $(ALL_LDFLAGS) $(LIBS)
   define PREBUILDCMDS
@@ -42,17 +42,17 @@ ifeq ($(config),release)
 endif
 
 ifeq ($(config),debug)
-  OBJDIR     = ../../../Output/Targets/Generic/Debug/obj/quake2-gles1
-  TARGETDIR  = ../../../Output/Targets/Generic/Debug/bin
+  OBJDIR     = ../../../Output/Targets/GCWZero/Debug/obj/quake2-gles1
+  TARGETDIR  = ../../../Output/Targets/GCWZero/Debug/bin
   TARGET     = $(TARGETDIR)/quake2-gles1
-  DEFINES   += -D__GCW_ZERO__ -DARCH=\"i386\" -DOSTYPE=\"Linux\" -DNOUNCRYPT -DZIP -DGLES1 -D_GNU_SOURCE=1 -DEGLW_GLES1
+  DEFINES   += -D__GCW_ZERO__ -DARCH=\"i386\" -DOSTYPE=\"Linux\" -DNOUNCRYPT -DZIP -D_GNU_SOURCE=1 -DEGLW_GLES1
   INCLUDES  += -I../../../../../Engine/External/include -I../../../Sources -I../../../../../Engine/Sources/Compatibility -I../../../../../Engine/Sources/Compatibility/OpenGLES/Includes
   ALL_CPPFLAGS  += $(CPPFLAGS) -MMD -MP $(DEFINES) $(INCLUDES)
   ALL_CFLAGS    += $(CFLAGS) $(ALL_CPPFLAGS) $(ARCH) -ffast-math -Wall -Wextra -g -std=c99 -Wno-unused-function -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-switch -Wno-missing-field-initializers -fPIC -fvisibility=hidden
   ALL_CXXFLAGS  += $(CXXFLAGS) $(ALL_CFLAGS)
   ALL_RESFLAGS  += $(RESFLAGS) $(DEFINES) $(INCLUDES)
-  ALL_LDFLAGS   += $(LDFLAGS) -L../../../Output/Targets/Generic/Debug/lib -L.
-  LDDEPS    += ../../../Output/Targets/Generic/Debug/lib/libZLib.a
+  ALL_LDFLAGS   += $(LDFLAGS) -L../../../Output/Targets/GCWZero/Debug/lib -L.
+  LDDEPS    += ../../../Output/Targets/GCWZero/Debug/lib/libZLib.a
   LIBS      += $(LDDEPS) -lm -ldl -lGLESv1_CM -lEGL -lSDL2main -lSDL2
   LINKCMD    = $(CC) -o $(TARGET) $(OBJECTS) $(RESOURCES) $(ARCH) $(ALL_LDFLAGS) $(LIBS)
   define PREBUILDCMDS
@@ -64,16 +64,15 @@ ifeq ($(config),debug)
 endif
 
 OBJECTS := \
-	$(OBJDIR)/hunk.o \
-	$(OBJDIR)/main.o \
-	$(OBJDIR)/network.o \
-	$(OBJDIR)/system.o \
-	$(OBJDIR)/misc_generic.o \
+	$(OBJDIR)/memory_linux.o \
+	$(OBJDIR)/network_linux.o \
+	$(OBJDIR)/system_linux.o \
 	$(OBJDIR)/qal.o \
-	$(OBJDIR)/vid.o \
-	$(OBJDIR)/input.o \
-	$(OBJDIR)/refresh.o \
-	$(OBJDIR)/sound_sdl.o \
+	$(OBJDIR)/video.o \
+	$(OBJDIR)/audio_sdl.o \
+	$(OBJDIR)/input_sdl.o \
+	$(OBJDIR)/system_sdl.o \
+	$(OBJDIR)/video_sdl.o \
 	$(OBJDIR)/cl_cin.o \
 	$(OBJDIR)/cl_console.o \
 	$(OBJDIR)/cl_download.o \
@@ -223,43 +222,39 @@ $(GCH): $(PCH)
 	$(SILENT) $(CC) -x c-header $(ALL_CFLAGS) -MMD -MP $(DEFINES) $(INCLUDES) -o "$@" -MF "$(@:%.gch=%.d)" -c "$<"
 endif
 
-$(OBJDIR)/hunk.o: ../../../Sources/backends/unix/hunk.c
+$(OBJDIR)/memory_linux.o: ../../../Sources/backends/unix/memory_linux.c
 	@echo $(notdir $<)
 	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF $(@:%.o=%.d) -c "$<"
 
-$(OBJDIR)/main.o: ../../../Sources/backends/unix/main.c
+$(OBJDIR)/network_linux.o: ../../../Sources/backends/unix/network_linux.c
 	@echo $(notdir $<)
 	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF $(@:%.o=%.d) -c "$<"
 
-$(OBJDIR)/network.o: ../../../Sources/backends/unix/network.c
+$(OBJDIR)/system_linux.o: ../../../Sources/backends/unix/system_linux.c
 	@echo $(notdir $<)
 	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF $(@:%.o=%.d) -c "$<"
 
-$(OBJDIR)/system.o: ../../../Sources/backends/unix/system.c
+$(OBJDIR)/qal.o: ../../../Sources/backends/qal.c
 	@echo $(notdir $<)
 	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF $(@:%.o=%.d) -c "$<"
 
-$(OBJDIR)/misc_generic.o: ../../../Sources/backends/generic/misc_generic.c
+$(OBJDIR)/video.o: ../../../Sources/backends/video.c
 	@echo $(notdir $<)
 	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF $(@:%.o=%.d) -c "$<"
 
-$(OBJDIR)/qal.o: ../../../Sources/backends/generic/qal.c
+$(OBJDIR)/audio_sdl.o: ../../../Sources/backends/sdl/audio_sdl.c
 	@echo $(notdir $<)
 	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF $(@:%.o=%.d) -c "$<"
 
-$(OBJDIR)/vid.o: ../../../Sources/backends/generic/vid.c
+$(OBJDIR)/input_sdl.o: ../../../Sources/backends/sdl/input_sdl.c
 	@echo $(notdir $<)
 	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF $(@:%.o=%.d) -c "$<"
 
-$(OBJDIR)/input.o: ../../../Sources/backends/sdl/input.c
+$(OBJDIR)/system_sdl.o: ../../../Sources/backends/sdl/system_sdl.c
 	@echo $(notdir $<)
 	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF $(@:%.o=%.d) -c "$<"
 
-$(OBJDIR)/refresh.o: ../../../Sources/backends/sdl/refresh.c
-	@echo $(notdir $<)
-	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF $(@:%.o=%.d) -c "$<"
-
-$(OBJDIR)/sound_sdl.o: ../../../Sources/backends/sdl/sound_sdl.c
+$(OBJDIR)/video_sdl.o: ../../../Sources/backends/sdl/video_sdl.c
 	@echo $(notdir $<)
 	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF $(@:%.o=%.d) -c "$<"
 

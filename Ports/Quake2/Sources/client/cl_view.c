@@ -61,12 +61,12 @@ lightstyle_t r_lightstyles[MAX_LIGHTSTYLES];
 char cl_weaponmodels[MAX_CLIENTWEAPONMODELS][MAX_QPATH];
 int num_cl_weaponmodels;
 
-void V_Render3dCrosshair(void);
+void V_Render3dCrosshair();
 
 /*
  * Specifies the model that will be used as the world
  */
-void V_ClearScene(void)
+void V_ClearScene()
 {
 	r_numdlights = 0;
 	r_numentities = 0;
@@ -449,22 +449,15 @@ int entitycmpfnc(const entity_t *a, const entity_t *b)
 void V_RenderView(float stereo_separation)
 {
 	if (cls.state != ca_active)
-	{
 		return;
-	}
 
 	if (!cl.refresh_prepped)
-	{
 		return;
-	}
 
 	if (cl_timedemo->value)
 	{
 		if (!cl.timedemo_start)
-		{
 			cl.timedemo_start = Sys_Milliseconds();
-		}
-
 		cl.timedemo_frames++;
 	}
 
@@ -485,19 +478,11 @@ void V_RenderView(float stereo_separation)
 		V_Render3dCrosshair();
 
 		if (cl_testparticles->value)
-		{
 			V_TestParticles();
-		}
-
 		if (cl_testentities->value)
-		{
 			V_TestEntities();
-		}
-
 		if (cl_testlights->value)
-		{
 			V_TestLights();
-		}
 
 		if (cl_testblend->value)
 		{
@@ -530,24 +515,14 @@ void V_RenderView(float stereo_separation)
 		cl.refdef.areabits = cl.frame.areabits;
 
 		if (!cl_add_entities->value)
-		{
 			r_numentities = 0;
-		}
-
 		if (!cl_add_particles->value)
-		{
 			r_numparticles = 0;
-		}
-
 		if (!cl_add_lights->value)
-		{
 			r_numdlights = 0;
-		}
 
 		if (!cl_add_blend->value)
-		{
 			VectorClear(cl.refdef.blend);
-		}
 
 		cl.refdef.num_entities = r_numentities;
 		cl.refdef.entities = r_entities;
@@ -584,31 +559,23 @@ void V_RenderView(float stereo_separation)
 	cl.refdef.y = scr_vrect.y;
 	cl.refdef.width = scr_vrect.width;
 	cl.refdef.height = scr_vrect.height;
-	cl.refdef.fov_y = CalcFov(cl.refdef.fov_x, (float)cl.refdef.width,
-			(float)cl.refdef.height);
+	cl.refdef.fov_y = CalcFov(cl.refdef.fov_x, (float)cl.refdef.width, (float)cl.refdef.height);
 
 	R_RenderFrame(&cl.refdef);
 
 	if (cl_stats->value)
-	{
-		Com_Printf("ent:%i  lt:%i  part:%i\n", r_numentities,
-			r_numdlights, r_numparticles);
-	}
+		Com_Printf("ent:%i  lt:%i  part:%i\n", r_numentities, r_numdlights, r_numparticles);
 
 	if (log_stats->value && (log_stats_file != 0))
-	{
-		fprintf(log_stats_file, "%i,%i,%i,", r_numentities,
-			r_numdlights, r_numparticles);
-	}
+		fprintf(log_stats_file, "%i,%i,%i,", r_numentities, r_numdlights, r_numparticles);
 
 	SCR_AddDirtyPoint(scr_vrect.x, scr_vrect.y);
-	SCR_AddDirtyPoint(scr_vrect.x + scr_vrect.width - 1,
-		scr_vrect.y + scr_vrect.height - 1);
+	SCR_AddDirtyPoint(scr_vrect.x + scr_vrect.width - 1, scr_vrect.y + scr_vrect.height - 1);
 
 	SCR_DrawCrosshair();
 }
 
-void V_Render3dCrosshair(void)
+void V_Render3dCrosshair()
 {
 	trace_t crosshair_trace;
 	vec3_t end;
@@ -662,7 +629,7 @@ void V_Viewpos_f(void)
 		(int)cl.refdef.viewangles[YAW]);
 }
 
-void V_Init(void)
+void V_Init()
 {
 	Cmd_AddCommand("gun_next", V_Gun_Next_f);
 	Cmd_AddCommand("gun_prev", V_Gun_Prev_f);

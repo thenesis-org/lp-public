@@ -30,7 +30,7 @@ image_t gltextures[MAX_GLTEXTURES];
 int numgltextures;
 int base_textureid; /* gltextures[i] = base_textureid+i */
 extern qboolean scrap_dirty;
-extern byte scrap_texels[MAX_SCRAPS][BLOCK_WIDTH * BLOCK_HEIGHT];
+extern byte scrap_texels[SCRAP_MAX_NB][SCRAP_WIDTH * SCRAP_HEIGHT];
 
 static byte intensitytable[256];
 static unsigned char gammatable[256];
@@ -48,7 +48,7 @@ int gl_tex_alpha_format = GL_RGBA;
 int gl_filter_min = GL_LINEAR_MIPMAP_NEAREST;
 int gl_filter_max = GL_LINEAR;
 
-int Draw_GetPalette(void);
+int Draw_GetPalette();
 
 typedef struct
 {
@@ -56,7 +56,7 @@ typedef struct
 	int minimize, maximize;
 } glmode_t;
 
-glmode_t modes[] =
+static const glmode_t modes[] =
 {
 	{ "GL_NEAREST", GL_NEAREST, GL_NEAREST },
 	{ "GL_LINEAR", GL_LINEAR, GL_LINEAR },
@@ -74,7 +74,7 @@ typedef struct
 	int mode;
 } gltmode_t;
 
-gltmode_t gl_alpha_modes[] =
+static const gltmode_t gl_alpha_modes[] =
 {
 	{ "default", GL_RGBA },
 	{ "R8G8B8A8", GL_RGBA },
@@ -84,7 +84,7 @@ gltmode_t gl_alpha_modes[] =
 
 #define NUM_GL_ALPHA_MODES (sizeof(gl_alpha_modes) / sizeof(gltmode_t))
 
-gltmode_t gl_solid_modes[] =
+static const gltmode_t gl_solid_modes[] =
 {
 	{ "default", GL_RGB },
 	{ "R8G8B8", GL_RGB },
@@ -446,14 +446,14 @@ qboolean R_Upload32Native(unsigned *data, int width, int height, qboolean mipmap
 		}
 	}
 
-	#if defined(GLES1)
+	#if defined(EGLW_GLES1)
 	glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, mipmap);
 	#endif
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-	#if defined(GLES2)
-	//glGenerateMipmap(GL_TEXTURE_2D);
+	#if defined(EGLW_GLES2)
+	glGenerateMipmap(GL_TEXTURE_2D);
 	#endif
-	#if defined(GLES1)
+	#if defined(EGLW_GLES1)
 	glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, false);
 	#endif
 
@@ -517,14 +517,14 @@ qboolean R_Upload32Old(unsigned *data, int width, int height, qboolean mipmap)
 
 	R_LightScaleTexture(data, scaled_width, scaled_height, !mipmap);
 
-	#if defined(GLES1)
+	#if defined(EGLW_GLES1)
 	glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, mipmap);
 	#endif
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, scaled_width, scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-	#if defined(GLES2)
-	//glGenerateMipmap(GL_TEXTURE_2D);
+	#if defined(EGLW_GLES2)
+	glGenerateMipmap(GL_TEXTURE_2D);
 	#endif
-	#if defined(GLES1)
+	#if defined(EGLW_GLES1)
 	glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, false);
 	#endif
 
@@ -669,8 +669,7 @@ image_t* R_LoadPic(char *name, byte *pic, int width, int realwidth, int height, 
 	}
 
 	/* load little pics into the scrap */
-	if (!nolerp && (image->type == it_pic) && (bits == 8) &&
-	    (image->width < 64) && (image->height < 64))
+	if (!nolerp && (image->type == it_pic) && (bits == 8) && (image->width < 64) && (image->height < 64))
 	{
 		int x, y;
 		int i, j, k;
@@ -679,9 +678,7 @@ image_t* R_LoadPic(char *name, byte *pic, int width, int realwidth, int height, 
 		texnum = Scrap_AllocBlock(image->width, image->height, &x, &y);
 
 		if (texnum == -1)
-		{
 			goto nonscrap;
-		}
 
 		scrap_dirty = true;
 
@@ -692,17 +689,17 @@ image_t* R_LoadPic(char *name, byte *pic, int width, int realwidth, int height, 
 		{
 			for (j = 0; j < image->width; j++, k++)
 			{
-				scrap_texels[texnum][(y + i) * BLOCK_WIDTH + x + j] = pic[k];
+				scrap_texels[texnum][(y + i) * SCRAP_WIDTH + x + j] = pic[k];
 			}
 		}
 
 		image->texnum = TEXNUM_SCRAPS + texnum;
 		image->scrap = true;
 		image->has_alpha = true;
-		image->sl = (x + 0.01f) / (float)BLOCK_WIDTH;
-		image->sh = (x + image->width - 0.01f) / (float)BLOCK_WIDTH;
-		image->tl = (y + 0.01f) / (float)BLOCK_WIDTH;
-		image->th = (y + image->height - 0.01f) / (float)BLOCK_WIDTH;
+		image->sl = (x + 0.01f) / (float)SCRAP_WIDTH;
+		image->sh = (x + image->width - 0.01f) / (float)SCRAP_WIDTH;
+		image->tl = (y + 0.01f) / (float)SCRAP_WIDTH;
+		image->th = (y + image->height - 0.01f) / (float)SCRAP_WIDTH;
 	}
 	else
 	{
@@ -773,16 +770,11 @@ image_t* R_FindImage(char *name, imagetype_t type)
 	const char * ext;
 
 	if (!name)
-	{
 		return NULL;
-	}
 
 	ext = COM_FileExtension(name);
 	if (!ext[0])
-	{
-		/* file has no extension */
-		return NULL;
-	}
+		return NULL; // file has no extension
 
 	len = Q_strlen(name);
 
@@ -791,15 +783,11 @@ image_t* R_FindImage(char *name, imagetype_t type)
 	memcpy(namewe, name, len - 4);
 
 	if (len < 5)
-	{
 		return NULL;
-	}
 
 	/* fix backslashes */
 	while ((ptr = strchr(name, '\\')))
-	{
 		*ptr = '/';
-	}
 
 	/* look for it */
 	for (i = 0, image = gltextures; i < numgltextures; i++, image++)
@@ -821,31 +809,20 @@ image_t* R_FindImage(char *name, imagetype_t type)
 		{
 			GetPCXInfo(name, &realwidth, &realheight);
 			if (realwidth == 0)
-			{
-				/* No texture found */
-				return NULL;
-			}
+				return NULL; // No texture found
 
 			/* try to load a tga, png or jpg (in that order/priority) */
-			if (LoadSTB(namewe, "tga", &pic, &width, &height)
-			    || LoadSTB(namewe, "png", &pic, &width, &height)
-			    || LoadSTB(namewe, "jpg", &pic, &width, &height))
+			if (LoadSTB(namewe, "tga", &pic, &width, &height) || LoadSTB(namewe, "png", &pic, &width, &height) || LoadSTB(namewe, "jpg", &pic, &width, &height))
 			{
 				/* upload tga or png or jpg */
-				image = R_LoadPic(name, pic, width, realwidth, height,
-						realheight, type, 32);
+				image = R_LoadPic(name, pic, width, realwidth, height, realheight, type, 32);
 			}
 			else
 			{
 				/* PCX if no TGA/PNG/JPEG available (exists always) */
 				LoadPCX(name, &pic, &palette, &width, &height);
-
 				if (!pic)
-				{
-					/* No texture found */
-					return NULL;
-				}
-
+					return NULL; // No texture found
 				/* Upload the PCX */
 				image = R_LoadPic(name, pic, width, 0, height, 0, type, 8);
 			}
@@ -853,12 +830,8 @@ image_t* R_FindImage(char *name, imagetype_t type)
 		else /* gl_retexture is not set */
 		{
 			LoadPCX(name, &pic, &palette, &width, &height);
-
 			if (!pic)
-			{
 				return NULL;
-			}
-
 			image = R_LoadPic(name, pic, width, 0, height, 0, type, 8);
 		}
 	}
@@ -870,19 +843,13 @@ image_t* R_FindImage(char *name, imagetype_t type)
 			/* Get size of the original texture */
 			GetWalInfo(name, &realwidth, &realheight);
 			if (realwidth == 0)
-			{
-				/* No texture found */
-				return NULL;
-			}
+				return NULL; // No texture found
 
 			/* try to load a tga, png or jpg (in that order/priority) */
-			if (LoadSTB(namewe, "tga", &pic, &width, &height)
-			    || LoadSTB(namewe, "png", &pic, &width, &height)
-			    || LoadSTB(namewe, "jpg", &pic, &width, &height))
+			if (LoadSTB(namewe, "tga", &pic, &width, &height) || LoadSTB(namewe, "png", &pic, &width, &height) || LoadSTB(namewe, "jpg", &pic, &width, &height))
 			{
 				/* upload tga or png or jpg */
-				image = R_LoadPic(name, pic, width, realwidth, height,
-						realheight, type, 32);
+				image = R_LoadPic(name, pic, width, realwidth, height, realheight, type, 32);
 			}
 			else
 			{
@@ -891,20 +858,13 @@ image_t* R_FindImage(char *name, imagetype_t type)
 			}
 
 			if (!image)
-			{
-				/* No texture found */
-				return NULL;
-			}
+				return NULL; // No texture found
 		}
 		else /* gl_retexture is not set */
 		{
 			image = LoadWal(name);
-
 			if (!image)
-			{
-				/* No texture found */
-				return NULL;
-			}
+				return NULL; // No texture found
 		}
 	}
 	else
@@ -933,23 +893,16 @@ image_t* R_FindImage(char *name, imagetype_t type)
 		 */
 
 		LoadSTB(name, ext, &pic, &width, &height);
-		image = R_LoadPic(name, pic, width, realwidth,
-				height, realheight, type, 32);
+		image = R_LoadPic(name, pic, width, realwidth, height, realheight, type, 32);
 	}
 	else
-	{
 		return NULL;
-	}
 
 	if (pic)
-	{
 		free(pic);
-	}
 
 	if (palette)
-	{
 		free(palette);
-	}
 
 	return image;
 }
@@ -964,31 +917,22 @@ struct image_s* R_RegisterSkin(char *name)
  * this registration sequence
  * will be freed.
  */
-void R_FreeUnusedImages(void)
+void R_FreeUnusedImages()
 {
-	int i;
-	image_t *image;
-
 	/* never free r_notexture or particle texture */
 	r_notexture->registration_sequence = registration_sequence;
 	r_particletexture->registration_sequence = registration_sequence;
 
+	int i;
+	image_t *image;
 	for (i = 0, image = gltextures; i < numgltextures; i++, image++)
 	{
 		if (image->registration_sequence == registration_sequence)
-		{
 			continue; /* used this sequence */
-		}
-
 		if (!image->registration_sequence)
-		{
 			continue; /* free image_t slot */
-		}
-
 		if (image->type == it_pic)
-		{
 			continue; /* don't free pics */
-		}
 
 		/* free it */
 		glDeleteTextures(1, (GLuint *)&image->texnum);
@@ -996,9 +940,8 @@ void R_FreeUnusedImages(void)
 	}
 }
 
-void R_InitImages(void)
+void R_InitImages()
 {
-	int i, j;
 	// use 1/gamma so higher value is brighter, to match HW gamma settings
 	float g = 1.0f / vid_gamma->value;
 
@@ -1008,64 +951,46 @@ void R_InitImages(void)
 	intensity = Cvar_Get("intensity", "2", CVAR_ARCHIVE);
 
 	if (intensity->value <= 1)
-	{
 		Cvar_Set("intensity", "1");
-	}
 
 	gl_state.inverse_intensity = 1 / intensity->value;
 
 	Draw_GetPalette();
 
-	for (i = 0; i < 256; i++)
+	for (int i = 0; i < 256; i++)
 	{
-		if ((g == 1) || gl_state.hwgamma)
+		if (g == 1 || gl_state.hwgamma)
 		{
 			gammatable[i] = (unsigned char)i;
 		}
 		else
 		{
-			float inf;
-
-			inf = 255 * powf(((float)i + 0.5f) / 255.5f, g) + 0.5f;
-
+			float inf = 255 * powf(((float)i + 0.5f) / 255.5f, g) + 0.5f;
 			if (inf < 0)
-			{
 				inf = 0;
-			}
-
 			if (inf > 255)
-			{
 				inf = 255;
-			}
-
 			gammatable[i] = (unsigned char)inf;
 		}
 	}
 
-	for (i = 0; i < 256; i++)
+	for (int i = 0; i < 256; i++)
 	{
-		j = (float)i * intensity->value;
-
+		float j = (float)i * intensity->value;
 		if (j > 255)
-		{
 			j = 255;
-		}
-
 		intensitytable[i] = (unsigned char)j;
 	}
 }
 
-void R_ShutdownImages(void)
+void R_ShutdownImages()
 {
 	int i;
 	image_t *image;
-
 	for (i = 0, image = gltextures; i < numgltextures; i++, image++)
 	{
 		if (!image->registration_sequence)
-		{
 			continue; /* free image_t slot */
-		}
 
 		/* free it */
 		glDeleteTextures(1, (GLuint *)&image->texnum);

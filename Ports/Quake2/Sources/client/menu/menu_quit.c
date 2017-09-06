@@ -1,6 +1,6 @@
 #include "client/menu/menu.h"
 
-static const char* M_Quit_Key(int key)
+static const char* M_Quit_Key(int key, int keyUnmodified)
 {
 	switch (key)
 	{

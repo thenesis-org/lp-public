@@ -20,8 +20,8 @@ ifndef RESCOMP
 endif
 
 ifeq ($(config),release)
-  OBJDIR     = ../../../Output/Targets/Generic/Release/obj/quake2-game
-  TARGETDIR  = ../../../Output/Targets/Generic/Release/bin/baseq2
+  OBJDIR     = ../../../Output/Targets/Windows-x86-32/Release/obj/quake2-game
+  TARGETDIR  = ../../../Output/Targets/Windows-x86-32/Release/bin/baseq2
   TARGET     = $(TARGETDIR)/game.dll
   DEFINES   += -DARCH=\"x86\" -DOSTYPE=\"Windows\" -DNOUNCRYPT -DZIP
   INCLUDES  += -I../../../../../Engine/External/Win32/include -I../../../../../Engine/External/include -I../../../Sources
@@ -29,7 +29,7 @@ ifeq ($(config),release)
   ALL_CFLAGS    += $(CFLAGS) $(ALL_CPPFLAGS) $(ARCH) -ffast-math -Wall -Wextra -O2 -std=c99 -Wno-unused-function -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-switch -Wno-missing-field-initializers -march=core2 -msse4.1 -mfpmath=sse
   ALL_CXXFLAGS  += $(CXXFLAGS) $(ALL_CFLAGS)
   ALL_RESFLAGS  += $(RESFLAGS) $(DEFINES) $(INCLUDES)
-  ALL_LDFLAGS   += $(LDFLAGS) -L../../../../../Engine/External/Win32/lib -L../../../Output/Targets/Generic/Release/lib -L. -s -shared -Wl,--out-implib="../../../Output/Targets/Generic/Release/lib/game.a" -static-libgcc -static-libstdc++
+  ALL_LDFLAGS   += $(LDFLAGS) -L../../../../../Engine/External/Win32/lib -L../../../Output/Targets/Windows-x86-32/Release/lib -L. -s -shared -Wl,--out-implib="../../../Output/Targets/Windows-x86-32/Release/lib/game.a" -static-libgcc -static-libstdc++
   LDDEPS    +=
   LIBS      += $(LDDEPS) -lgdi32 -lmingw32
   LINKCMD    = $(CC) -o $(TARGET) $(OBJECTS) $(RESOURCES) $(ARCH) $(ALL_LDFLAGS) $(LIBS)
@@ -42,8 +42,8 @@ ifeq ($(config),release)
 endif
 
 ifeq ($(config),debug)
-  OBJDIR     = ../../../Output/Targets/Generic/Debug/obj/quake2-game
-  TARGETDIR  = ../../../Output/Targets/Generic/Debug/bin/baseq2
+  OBJDIR     = ../../../Output/Targets/Windows-x86-32/Debug/obj/quake2-game
+  TARGETDIR  = ../../../Output/Targets/Windows-x86-32/Debug/bin/baseq2
   TARGET     = $(TARGETDIR)/game.dll
   DEFINES   += -DARCH=\"x86\" -DOSTYPE=\"Windows\" -DNOUNCRYPT -DZIP
   INCLUDES  += -I../../../../../Engine/External/Win32/include -I../../../../../Engine/External/include -I../../../Sources
@@ -51,7 +51,7 @@ ifeq ($(config),debug)
   ALL_CFLAGS    += $(CFLAGS) $(ALL_CPPFLAGS) $(ARCH) -ffast-math -Wall -Wextra -g -std=c99 -Wno-unused-function -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-switch -Wno-missing-field-initializers -march=core2 -msse4.1 -mfpmath=sse
   ALL_CXXFLAGS  += $(CXXFLAGS) $(ALL_CFLAGS)
   ALL_RESFLAGS  += $(RESFLAGS) $(DEFINES) $(INCLUDES)
-  ALL_LDFLAGS   += $(LDFLAGS) -L../../../../../Engine/External/Win32/lib -L../../../Output/Targets/Generic/Debug/lib -L. -shared -Wl,--out-implib="../../../Output/Targets/Generic/Debug/lib/game.a" -static-libgcc -static-libstdc++
+  ALL_LDFLAGS   += $(LDFLAGS) -L../../../../../Engine/External/Win32/lib -L../../../Output/Targets/Windows-x86-32/Debug/lib -L. -shared -Wl,--out-implib="../../../Output/Targets/Windows-x86-32/Debug/lib/game.a" -static-libgcc -static-libstdc++
   LDDEPS    +=
   LIBS      += $(LDDEPS) -lgdi32 -lmingw32
   LINKCMD    = $(CC) -o $(TARGET) $(OBJECTS) $(RESOURCES) $(ARCH) $(ALL_LDFLAGS) $(LIBS)

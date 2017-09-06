@@ -5,20 +5,20 @@ static menuframework_s MenuStick_menu;
 //----------------------------------------
 // Joystick enabled.
 //----------------------------------------
-static menulist_s MenuStick_joystickEnabled_list;
+static menulist_s MenuStick_stickEnabled_list;
 
-static void MenuStick_joystickEnabled_apply()
+static void MenuStick_stickEnabled_apply()
 {
-	menulist_s *list = &MenuStick_joystickEnabled_list;
-	Cvar_SetValue("joystick_enabled", list->curvalue != 0);
+	menulist_s *list = &MenuStick_stickEnabled_list;
+	Cvar_SetValue("stick_enabled", list->curvalue != 0);
 }
 
-static void MenuStick_joystickEnabled_callback(void *unused)
+static void MenuStick_stickEnabled_callback(void *unused)
 {
-	MenuStick_joystickEnabled_apply();
+	MenuStick_stickEnabled_apply();
 }
 
-static int MenuStick_joystickEnabled_init(int y)
+static int MenuStick_stickEnabled_init(int y)
 {
 	static const char *itemNames[] =
 	{
@@ -26,14 +26,53 @@ static int MenuStick_joystickEnabled_init(int y)
 		"yes",
 		0
 	};
-	menulist_s *list = &MenuStick_joystickEnabled_list;
+	menulist_s *list = &MenuStick_stickEnabled_list;
 	list->generic.type = MTYPE_SPINCONTROL;
-	list->generic.name = "joystick enabled";
+	list->generic.name = "stick enabled";
 	list->generic.x = 0;
 	list->generic.y = y;
-	list->generic.callback = MenuStick_joystickEnabled_callback;
+	list->generic.callback = MenuStick_stickEnabled_callback;
 	list->itemnames = itemNames;
-	list->curvalue = joystick_enabled->value != 0;
+	list->curvalue = stick_enabled->value != 0;
+	list->savedValue = list->curvalue;
+	Menu_AddItem(&MenuStick_menu, (void *)list);
+	y += 10;
+	return y;
+}
+
+//----------------------------------------
+// Invert stick pitch.
+//----------------------------------------
+static menulist_s  MenuStick_stickPitchInverted_list;
+
+static void  MenuStick_stickPitchInverted_apply()
+{
+	menulist_s *list = & MenuStick_stickPitchInverted_list;
+	Cvar_SetValue("stick_pitch_inverted", list->curvalue);
+}
+
+static void  MenuStick_stickPitchInverted_callback(void *unused)
+{
+	 MenuStick_stickPitchInverted_apply();
+}
+
+static int  MenuStick_stickPitchInverted_init(int y)
+{
+	static const char *itemNames[] =
+	{
+		"no",
+		"yes",
+		0
+	};
+
+	menulist_s *list = & MenuStick_stickPitchInverted_list;
+	list->generic.type = MTYPE_SPINCONTROL;
+	list->generic.x = 0;
+	list->generic.y = y;
+	list->generic.name = "invert stick pitch";
+	list->generic.callback =  MenuStick_stickPitchInverted_callback;
+	list->itemnames = itemNames;
+	list->curvalue = (stick_pitch_inverted->value != 0);
 	list->savedValue = list->curvalue;
 	Menu_AddItem(&MenuStick_menu, (void *)list);
 	y += 10;
@@ -151,7 +190,8 @@ static void MenuStick_init()
 	menu->x = viddef.width / 2;
 	menu->nitems = 0;
 
-	y = MenuStick_joystickEnabled_init(y);
+	y = MenuStick_stickEnabled_init(y);
+	y = MenuStick_stickPitchInverted_init(y);
 	y = MenuStick_stickSensitivity_init(y);
 	y = MenuStick_stickCurve_init(y);
 	y = MenuStick_stickDeadZone_init(y);
@@ -167,14 +207,14 @@ static void MenuStick_draw()
 	M_Popup();
 }
 
-static const char* MenuStick_key(int key)
+static const char* MenuStick_key(int key, int keyUnmodified)
 {
 	if (m_popup_string)
 	{
 		m_popup_string = NULL;
 		return NULL;
 	}
-	return Default_MenuKey(&MenuStick_menu, key);
+	return Default_MenuKey(&MenuStick_menu, key, keyUnmodified);
 }
 
 void MenuStick_enter()

@@ -39,21 +39,28 @@
 
 #include "client/ref.h"
 
-#define TEXNUM_LIGHTMAPS 1024
-#define TEXNUM_SCRAPS 1152
-#define TEXNUM_IMAGES 1153
-#define MAX_GLTEXTURES 1024
-#define MAX_SCRAPS 1
-#define BLOCK_WIDTH 128
-#define BLOCK_HEIGHT 128
 #define REF_VERSION QUAKE2_TEAM_NAME " OpenGL ES Renderer"
-#define MAX_LBM_HEIGHT 480
+
 #define BACKFACE_EPSILON 0.01f
-#define DYNAMIC_LIGHT_WIDTH 128
-#define DYNAMIC_LIGHT_HEIGHT 128
-#define LIGHTMAP_BYTES 4
-#define MAX_LIGHTMAPS 128
-#define GL_LIGHTMAP_FORMAT GL_RGBA
+
+#define MAX_GLTEXTURES 1024
+
+#define SCRAP_MAX_NB 1
+#define SCRAP_WIDTH 128
+#define SCRAP_HEIGHT 128
+
+#define LIGHTMAP_WIDTH 128
+#define LIGHTMAP_HEIGHT 128
+#define LIGHTMAP_STATIC_MAX_NB 128
+#define LIGHTMAP_DYNAMIC_MAX_NB 16
+#define LIGHTMAP_MAX_NB (LIGHTMAP_STATIC_MAX_NB + LIGHTMAP_DYNAMIC_MAX_NB)
+#define LIGHTMAP_SURFACE_MAX_NB (LIGHTMAP_STATIC_MAX_NB + 1)
+
+#define TEXNUM_LIGHTMAPS 1024
+#define TEXNUM_SCRAPS (TEXNUM_LIGHTMAPS + LIGHTMAP_MAX_NB)
+#define TEXNUM_IMAGES (TEXNUM_SCRAPS + SCRAP_MAX_NB)
+
+#define MAX_LBM_HEIGHT 480
 
 /* up / down */
 #define PITCH 0
@@ -117,16 +124,9 @@ typedef struct image_s
 #include "model.h"
 
 void GL_BeginRendering(int *x, int *y, int *width, int *height);
-void GL_EndRendering(void);
+void GL_EndRendering();
 
 extern float gldepthmin, gldepthmax;
-
-typedef struct
-{
-	float x, y, z;
-	float s, t;
-	float r, g, b;
-} glvert_t;
 
 extern image_t gltextures[MAX_GLTEXTURES];
 extern int numgltextures;
@@ -190,7 +190,7 @@ extern cvar_t *gl_particle_size;
 extern cvar_t *gl_particle_att_a;
 extern cvar_t *gl_particle_att_b;
 extern cvar_t *gl_particle_att_c;
-#if defined(GLES1)
+#if defined(EGLW_GLES1)
 extern cvar_t *gl_particle_point;
 extern cvar_t *gl_particle_sprite;
 #endif
@@ -240,7 +240,6 @@ extern int registration_sequence;
 
 void V_AddBlend(float r, float g, float b, float a, float *v_blend);
 
-void R_RenderView(refdef_t *fd);
 void R_DrawAliasModel(entity_t *e);
 void R_DrawBrushModel(entity_t *e);
 void R_DrawSpriteModel(entity_t *e);
@@ -312,6 +311,7 @@ typedef struct
 
 	float camera_separation;
 	enum stereo_modes stereo_mode;
+    char eyeIndex;
 
 	qboolean hwgamma;
 
@@ -322,16 +322,18 @@ typedef struct
 
 typedef struct
 {
-	int internal_format;
-	int current_lightmap_texture;
+	msurface_t *lightmapSurfaces[LIGHTMAP_SURFACE_MAX_NB];
 
-	msurface_t *lightmap_surfaces[MAX_LIGHTMAPS];
+	short staticLightmapNb; // Number of static textures.
+	short staticLightmapNbInFrame; // Number of static textures used in the current frame.
+    short staticLightmapSurfacesInFrame[LIGHTMAP_STATIC_MAX_NB];
 
-	int allocated[BLOCK_WIDTH];
+	short dynamicLightmapCurrent; // Index of the current dynamic texture (round robin, even between frames for performance).
+    short dynamicLightmapNbInFrame; // Number of dynamic pictures used in the current frame.
 
-	/* the lightmap texture data needs to be kept in
-	   main memory so texsubimage can update properly */
-	byte lightmap_buffer[4 * BLOCK_WIDTH * BLOCK_HEIGHT];
+	short allocated[LIGHTMAP_WIDTH];
+	// The lightmap texture data needs to be kept in main memory so texsubimage can update properly.
+	byte lightmap_buffer[4 * LIGHTMAP_WIDTH * LIGHTMAP_HEIGHT];
 } gllightmapstate_t;
 
 extern glconfig_t gl_config;

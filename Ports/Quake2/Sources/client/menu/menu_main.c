@@ -60,7 +60,7 @@ static void M_Main_Draw()
 	Draw_PicScaled((xoffset - 30 - w) * scale, (ystart + h + 5) * scale, "m_main_logo", scale);
 }
 
-static const char* M_Main_Key(int key)
+static const char* M_Main_Key(int key, int keyUnmodified)
 {
 	const char *sound = menu_move_sound;
 

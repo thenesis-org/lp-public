@@ -362,9 +362,9 @@ static void StartServer_MenuDraw()
 	Menu_Draw(&s_startserver_menu);
 }
 
-static const char* StartServer_MenuKey(int key)
+static const char* StartServer_MenuKey(int key, int keyUnmodified)
 {
-	return Default_MenuKey(&s_startserver_menu, key);
+	return Default_MenuKey(&s_startserver_menu, key, keyUnmodified);
 }
 
 void MenuStartServer_enter()

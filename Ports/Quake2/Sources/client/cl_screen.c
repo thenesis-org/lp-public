@@ -243,7 +243,7 @@ void SCR_CenterPrint(char *str)
 	Con_ClearNotify();
 }
 
-void SCR_DrawCenterString(void)
+void SCR_DrawCenterString()
 {
 	char *start;
 	int l;
@@ -277,9 +277,7 @@ void SCR_DrawCenterString(void)
 		for (l = 0; l < 40; l++)
 		{
 			if ((start[l] == '\n') || !start[l])
-			{
 				break;
-			}
 		}
 
 		x = ((viddef.width / scale) - (l * char_unscaled_width)) / 2;
@@ -290,9 +288,7 @@ void SCR_DrawCenterString(void)
 			Draw_CharScaled(x * scale, y * scale, start[j], scale);
 
 			if (!remaining--)
-			{
 				goto exit;
-			}
 		}
 
 		SCR_AddDirtyPoint(x, y + char_unscaled_height);
@@ -300,14 +296,10 @@ void SCR_DrawCenterString(void)
 		y += char_unscaled_height;
 
 		while (*start && *start != '\n')
-		{
 			start++;
-		}
 
 		if (!*start)
-		{
 			break;
-		}
 
 		start++; /* skip the \n */
 	}
@@ -316,14 +308,11 @@ exit:
 	Draw_CharEnd();
 }
 
-void SCR_CheckDrawCenterString(void)
+void SCR_CheckDrawCenterString()
 {
 	scr_centertime_off -= cls.frametime;
-
 	if (scr_centertime_off <= 0)
-	{
 		return;
-	}
 
 	SCR_DrawCenterString();
 }
@@ -331,20 +320,16 @@ void SCR_CheckDrawCenterString(void)
 /*
  * Sets scr_vrect, the coordinates of the rendered window
  */
-static void SCR_CalcVrect(void)
+static void SCR_CalcVrect()
 {
 	int size;
 
 	/* bound viewsize */
 	if (scr_viewsize->value < 40)
-	{
 		Cvar_Set("viewsize", "40");
-	}
 
 	if (scr_viewsize->value > 100)
-	{
 		Cvar_Set("viewsize", "100");
-	}
 
 	size = scr_viewsize->value;
 
@@ -361,7 +346,7 @@ static void SCR_CalcVrect(void)
 /*
  * Keybinding command
  */
-void SCR_SizeUp_f(void)
+void SCR_SizeUp_f()
 {
 	Cvar_SetValue("viewsize", (float)scr_viewsize->value + 10);
 }
@@ -369,7 +354,7 @@ void SCR_SizeUp_f(void)
 /*
  * Keybinding command
  */
-void SCR_SizeDown_f(void)
+void SCR_SizeDown_f()
 {
 	Cvar_SetValue("viewsize", (float)scr_viewsize->value - 10);
 }
@@ -377,7 +362,7 @@ void SCR_SizeDown_f(void)
 /*
  * Set a specific sky and rotation speed
  */
-void SCR_Sky_f(void)
+void SCR_Sky_f()
 {
 	float rotate;
 	vec3_t axis;
@@ -389,13 +374,9 @@ void SCR_Sky_f(void)
 	}
 
 	if (Cmd_Argc() > 2)
-	{
 		rotate = (float)strtod(Cmd_Argv(2), (char **)NULL);
-	}
 	else
-	{
 		rotate = 0;
-	}
 
 	if (Cmd_Argc() == 6)
 	{
@@ -413,7 +394,7 @@ void SCR_Sky_f(void)
 	R_SetSky(Cmd_Argv(1), rotate, axis);
 }
 
-void SCR_Init(void)
+void SCR_Init()
 {
 	scr_viewsize = Cvar_Get("viewsize", "100", CVAR_ARCHIVE);
 	scr_conspeed = Cvar_Get("scr_conspeed", "3", 0);
@@ -441,46 +422,38 @@ void SCR_Init(void)
 	scr_initialized = true;
 }
 
-void SCR_DrawNet(void)
+void SCR_DrawNet()
 {
 	float scale = SCR_GetMenuScale();
 
 	if (cls.netchan.outgoing_sequence - cls.netchan.incoming_acknowledged < CMD_BACKUP - 1)
-	{
 		return;
-	}
 
 	Draw_PicScaled(scr_vrect.x + 64 * scale, scr_vrect.y, "net", scale);
 }
 
-void SCR_DrawPause(void)
+void SCR_DrawPause()
 {
 	int w, h;
 	float scale = SCR_GetMenuScale();
 
 	if (!scr_showpause->value) /* turn off for screenshots */
-	{
 		return;
-	}
 
 	if (!cl_paused->value)
-	{
 		return;
-	}
 
 	Draw_GetPicSize(&w, &h, "pause");
 	Draw_PicScaled((viddef.width - w * scale) / 2, viddef.height / 2 + 8 * scale, "pause", scale);
 }
 
-void SCR_DrawLoading(void)
+void SCR_DrawLoading()
 {
 	int w, h;
 	float scale = SCR_GetMenuScale();
 
 	if (!scr_draw_loading)
-	{
 		return;
-	}
 
 	Draw_GetPicSize(&w, &h, "loading");
 	Draw_PicScaled((viddef.width - w * scale) / 2, (viddef.height - h * scale) / 2, "loading", scale);
@@ -489,40 +462,30 @@ void SCR_DrawLoading(void)
 /*
  * Scroll it up or down
  */
-void SCR_RunConsole(void)
+void SCR_RunConsole()
 {
 	/* decide on the height of the console */
 	if (cls.key_dest == key_console)
-	{
 		scr_conlines = 0.5f; /* half screen */
-	}
 	else
-	{
 		scr_conlines = 0; /* none visible */
-	}
 
 	if (scr_conlines < scr_con_current)
 	{
 		scr_con_current -= scr_conspeed->value * cls.frametime;
-
 		if (scr_conlines > scr_con_current)
-		{
 			scr_con_current = scr_conlines;
-		}
 	}
 	else
 	if (scr_conlines > scr_con_current)
 	{
 		scr_con_current += scr_conspeed->value * cls.frametime;
-
 		if (scr_conlines < scr_con_current)
-		{
 			scr_con_current = scr_conlines;
-		}
 	}
 }
 
-void SCR_DrawConsole(void)
+void SCR_DrawConsole()
 {
 	Con_CheckResize();
 
@@ -554,7 +517,7 @@ void SCR_DrawConsole(void)
 	}
 }
 
-void SCR_BeginLoadingPlaque(void)
+void SCR_BeginLoadingPlaque()
 {
 	S_StopAllSounds();
 	cl.sound_prepped = false; /* don't play ambients */
@@ -607,21 +570,19 @@ void SCR_EndLoadingPlaque(void)
 	Con_ClearNotify();
 }
 
-void SCR_Loading_f(void)
+void SCR_Loading_f()
 {
 	SCR_BeginLoadingPlaque();
 }
 
-void SCR_TimeRefresh_f(void)
+void SCR_TimeRefresh_f()
 {
 	int i;
 	int start, stop;
 	float time;
 
 	if (cls.state != ca_active)
-	{
 		return;
-	}
 
 	start = Sys_Milliseconds();
 
@@ -663,27 +624,16 @@ void SCR_TimeRefresh_f(void)
 void SCR_AddDirtyPoint(int x, int y)
 {
 	if (x < scr_dirty.x1)
-	{
 		scr_dirty.x1 = x;
-	}
-
 	if (x > scr_dirty.x2)
-	{
 		scr_dirty.x2 = x;
-	}
-
 	if (y < scr_dirty.y1)
-	{
 		scr_dirty.y1 = y;
-	}
-
 	if (y > scr_dirty.y2)
-	{
 		scr_dirty.y2 = y;
-	}
 }
 
-void SCR_DirtyScreen(void)
+void SCR_DirtyScreen()
 {
 	SCR_AddDirtyPoint(0, 0);
 	SCR_AddDirtyPoint(viddef.width - 1, viddef.height - 1);
@@ -692,26 +642,18 @@ void SCR_DirtyScreen(void)
 /*
  * Clear any parts of the tiled background that were drawn on last frame
  */
-void SCR_TileClear(void)
+void SCR_TileClear()
 {
 	int i;
 	int top, bottom, left, right;
 	dirty_t clear;
 
 	if (scr_con_current == 1.0f)
-	{
 		return; /* full screen console */
-	}
-
 	if (scr_viewsize->value == 100)
-	{
 		return; /* full screen rendering */
-	}
-
 	if (cl.cinematictime > 0)
-	{
 		return; /* full screen cinematic */
-	}
 
 	/* erase rect will be the union of the past three
 	   frames so tripple buffering works properly */
@@ -720,24 +662,13 @@ void SCR_TileClear(void)
 	for (i = 0; i < 2; i++)
 	{
 		if (scr_old_dirty[i].x1 < clear.x1)
-		{
 			clear.x1 = scr_old_dirty[i].x1;
-		}
-
 		if (scr_old_dirty[i].x2 > clear.x2)
-		{
 			clear.x2 = scr_old_dirty[i].x2;
-		}
-
 		if (scr_old_dirty[i].y1 < clear.y1)
-		{
 			clear.y1 = scr_old_dirty[i].y1;
-		}
-
 		if (scr_old_dirty[i].y2 > clear.y2)
-		{
 			clear.y2 = scr_old_dirty[i].y2;
-		}
 	}
 
 	scr_old_dirty[1] = scr_old_dirty[0];
@@ -750,16 +681,11 @@ void SCR_TileClear(void)
 
 	/* don't bother with anything convered by the console */
 	top = (int)(scr_con_current * viddef.height);
-
 	if (top >= clear.y1)
-	{
 		clear.y1 = top;
-	}
 
 	if (clear.y2 <= clear.y1)
-	{
 		return; /* nothing disturbed */
-	}
 
 	top = scr_vrect.y;
 	bottom = top + scr_vrect.height - 1;
@@ -826,12 +752,9 @@ char *sb_nums[2][11] =
  */
 void SizeHUDString(char *string, int *w, int *h)
 {
-	int lines, width, current;
-
-	lines = 1;
-	width = 0;
-
-	current = 0;
+	int lines = 1;
+	int width = 0;
+	int current = 0;
 
 	while (*string)
 	{
@@ -843,11 +766,8 @@ void SizeHUDString(char *string, int *w, int *h)
 		else
 		{
 			current++;
-
 			if (current > width)
-			{
 				width = current;
-			}
 		}
 
 		string++;
@@ -879,13 +799,9 @@ void DrawHUDStringScaled(char *string, int x, int y, int centerwidth, int xor, f
 		line[width] = 0;
 
 		if (centerwidth)
-		{
 			x = margin + (centerwidth - width * 8) * factor / 2;
-		}
 		else
-		{
 			x = margin;
-		}
 
 		for (i = 0; i < width; i++)
 		{
@@ -908,46 +824,33 @@ void DrawHUDString(char *string, int x, int y, int centerwidth, int xor)
 
 void SCR_DrawFieldScaled(int x, int y, int color, int width, int value, float factor)
 {
-	char num[16], *ptr;
-	int l;
-	int frame;
-
 	if (width < 1)
-	{
 		return;
-	}
 
 	/* draw number string */
 	if (width > 5)
-	{
 		width = 5;
-	}
 
 	SCR_AddDirtyPoint(x, y);
 	SCR_AddDirtyPoint(x + (width * CHAR_WIDTH + 2) * factor, y + 23);
 
+	char num[16];
 	Com_sprintf(num, sizeof(num), "%i", value);
-	l = (int)Q_strlen(num);
-
+	int l = (int)Q_strlen(num);
 	if (l > width)
-	{
 		l = width;
-	}
 
 	x += (2 + CHAR_WIDTH * (width - l)) * factor;
 
-	ptr = num;
+	char *ptr = num;
 
 	while (*ptr && l)
 	{
+        int frame;
 		if (*ptr == '-')
-		{
 			frame = STAT_MINUS;
-		}
 		else
-		{
 			frame = *ptr - '0';
-		}
 
 		Draw_PicScaled(x, y, sb_nums[color][frame], factor);
 		x += CHAR_WIDTH * factor;
@@ -1006,14 +909,10 @@ void SCR_ExecuteLayoutString(char *s)
 	float scale = SCR_GetHUDScale();
 
 	if ((cls.state != ca_active) || !cl.refresh_prepped)
-	{
 		return;
-	}
 
 	if (!s[0])
-	{
 		return;
-	}
 
 	x = 0;
 	y = 0;
@@ -1071,16 +970,12 @@ void SCR_ExecuteLayoutString(char *s)
 			index = (int)strtol(token, (char **)NULL, 10);
 
 			if ((index < 0) || (index >= (int)sizeof(cl.frame.playerstate.stats)))
-			{
 				Com_Error(ERR_DROP, "bad stats index %d (0x%x)", index, index);
-			}
 
 			value = cl.frame.playerstate.stats[index];
 
 			if (value >= MAX_IMAGES)
-			{
 				Com_Error(ERR_DROP, "Pic >= MAX_IMAGES");
-			}
 
 			if (cl.configstrings[CS_IMAGES + value])
 			{
@@ -1108,9 +1003,7 @@ void SCR_ExecuteLayoutString(char *s)
 			value = (int)strtol(token, (char **)NULL, 10);
 
 			if ((value >= MAX_CLIENTS) || (value < 0))
-			{
 				Com_Error(ERR_DROP, "client >= MAX_CLIENTS");
-			}
 
 			ci = &cl.clientinfo[value];
 
@@ -1130,9 +1023,7 @@ void SCR_ExecuteLayoutString(char *s)
 			DrawStringScaled(x + scale * 32, y + scale * 24, va("Time:  %i", time), scale);
 
 			if (!ci->icon)
-			{
 				ci = &cl.baseclientinfo;
-			}
 
 			Draw_PicScaled(x, y, ci->iconname, scale);
 			continue;
@@ -1155,9 +1046,7 @@ void SCR_ExecuteLayoutString(char *s)
 			value = (int)strtol(token, (char **)NULL, 10);
 
 			if ((value >= MAX_CLIENTS) || (value < 0))
-			{
 				Com_Error(ERR_DROP, "client >= MAX_CLIENTS");
-			}
 
 			ci = &cl.clientinfo[value];
 
@@ -1166,22 +1055,15 @@ void SCR_ExecuteLayoutString(char *s)
 
 			token = COM_Parse(&s);
 			ping = (int)strtol(token, (char **)NULL, 10);
-
 			if (ping > 999)
-			{
 				ping = 999;
-			}
 
 			sprintf(block, "%3d %3d %-12.12s", score, ping, ci->name);
 
 			if (value == cl.playernum)
-			{
 				DrawAltStringScaled(x, y, block, scale);
-			}
 			else
-			{
 				DrawAltStringScaled(x, y, block, scale);
-			}
 
 			continue;
 		}
@@ -1216,23 +1098,15 @@ void SCR_ExecuteLayoutString(char *s)
 			value = cl.frame.playerstate.stats[STAT_HEALTH];
 
 			if (value > 25)
-			{
 				color = 0; /* green */
-			}
 			else
 			if (value > 0)
-			{
 				color = (cl.frame.serverframe >> 2) & 1; /* flash */
-			}
 			else
-			{
 				color = 1;
-			}
 
 			if (cl.frame.playerstate.stats[STAT_FLASHES] & 1)
-			{
 				Draw_PicScaled(x, y, "field_3", scale);
-			}
 
 			SCR_DrawFieldScaled(x, y, color, width, value, scale);
 			continue;
@@ -1247,23 +1121,15 @@ void SCR_ExecuteLayoutString(char *s)
 			value = cl.frame.playerstate.stats[STAT_AMMO];
 
 			if (value > 5)
-			{
 				color = 0; /* green */
-			}
 			else
 			if (value >= 0)
-			{
 				color = (cl.frame.serverframe >> 2) & 1; /* flash */
-			}
 			else
-			{
 				continue; /* negative number = don't show */
-			}
 
 			if (cl.frame.playerstate.stats[STAT_FLASHES] & 4)
-			{
 				Draw_PicScaled(x, y, "field_3", scale);
-			}
 
 			SCR_DrawFieldScaled(x, y, color, width, value, scale);
 			continue;
@@ -1366,7 +1232,7 @@ void SCR_ExecuteLayoutString(char *s)
  * The status bar is a small layout program that
  * is based on the stats array
  */
-void SCR_DrawStats(void)
+void SCR_DrawStats()
 {
 	SCR_ExecuteLayoutString(cl.configstrings[CS_STATUSBAR]);
 }
@@ -1387,7 +1253,7 @@ void SCR_DrawLayout(void)
  * This is called every frame, and can also be called
  * explicitly to flush text to the screen.
  */
-void SCR_UpdateScreen(void)
+void SCR_UpdateScreen()
 {
 	int numframes;
 	int i;
@@ -1403,14 +1269,11 @@ void SCR_UpdateScreen(void)
 			cls.disable_screen = 0;
 			Com_Printf("Loading plaque timed out.\n");
 		}
-
 		return;
 	}
 
 	if (!scr_initialized || !con.initialized)
-	{
 		return; /* not initialized yet */
-	}
 
 	if (gl_stereo->value)
 	{
@@ -1432,18 +1295,13 @@ void SCR_UpdateScreen(void)
 		if (scr_draw_loading == 2)
 		{
 			/* loading plaque over black screen */
-			int w, h;
-
 			if (i == 0)
-			{
 				R_SetPalette(NULL);
-			}
 
 			if (i == numframes - 1)
-			{
 				scr_draw_loading = false;
-			}
 
+			int w, h;
 			Draw_GetPicSize(&w, &h, "loading");
 			Draw_PicScaled((viddef.width - w * scale) / 2, (viddef.height - h * scale) / 2, "loading", scale);
 		}
@@ -1498,14 +1356,10 @@ void SCR_UpdateScreen(void)
 			SCR_DrawStats();
 
 			if (cl.frame.playerstate.stats[STAT_LAYOUTS] & 1)
-			{
 				SCR_DrawLayout();
-			}
 
 			if (cl.frame.playerstate.stats[STAT_LAYOUTS] & 2)
-			{
 				CL_DrawInventory();
-			}
 
 			SCR_DrawNet();
 			SCR_CheckDrawCenterString();
@@ -1518,15 +1372,10 @@ void SCR_UpdateScreen(void)
 			}
 
 			if (scr_timegraph->value)
-			{
 				SCR_DebugGraph(cls.frametime * 300, 0);
-			}
 
-			if (scr_debuggraph->value || scr_timegraph->value ||
-			    scr_netgraph->value)
-			{
+			if (scr_debuggraph->value || scr_timegraph->value || scr_netgraph->value)
 				SCR_DrawDebugGraph();
-			}
 
 			SCR_DrawPause();
 
@@ -1565,7 +1414,7 @@ static float SCR_ClampScale(float scale)
 	return scale;
 }
 
-static float SCR_GetDefaultScale(void)
+static float SCR_GetDefaultScale()
 {
 	int i = viddef.width / 640;
 	int j = viddef.height / 240;
@@ -1584,12 +1433,8 @@ static float SCR_GetDefaultScale(void)
 
 void SCR_DrawCrosshair()
 {
-	float scale;
-
 	if (!crosshair->value)
-	{
 		return;
-	}
 
 	if (crosshair->modified)
 	{
@@ -1598,25 +1443,20 @@ void SCR_DrawCrosshair()
 	}
 
 	if (!crosshair_pic[0])
-	{
 		return;
-	}
 
+	float scale;
 	if (crosshair_scale->value < 0)
-	{
 		scale = SCR_GetDefaultScale();
-	}
 	else
-	{
 		scale = SCR_ClampScale(crosshair_scale->value);
-	}
 
 	Draw_PicScaled(scr_vrect.x + (scr_vrect.width - crosshair_width * scale) / 2,
 		scr_vrect.y + (scr_vrect.height - crosshair_height * scale) / 2,
 		crosshair_pic, scale);
 }
 
-float SCR_GetHUDScale(void)
+float SCR_GetHUDScale()
 {
 	float scale;
 
@@ -1642,7 +1482,7 @@ float SCR_GetHUDScale(void)
 	return scale;
 }
 
-float SCR_GetConsoleScale(void)
+float SCR_GetConsoleScale()
 {
 	float scale;
 

@@ -5,57 +5,22 @@
 static menuframework_s MenuMouse_menu;
 
 //----------------------------------------
-// Mouse sensivity.
+// Invert mouse pitch.
 //----------------------------------------
+static menulist_s MenuMouse_mousePitchInverted_list;
 
-static menuslider_s MenuMouse_mouseSensitivity_slider;
-
-static void MenuMouse_mouseSensitivity_apply()
+static void MenuMouse_mousePitchInverted_apply()
 {
-	menuslider_s *slider = &MenuMouse_mouseSensitivity_slider;
-	Cvar_SetValue("sensitivity", slider->curvalue / 2.0F);
+	menulist_s *list = & MenuMouse_mousePitchInverted_list;
+	Cvar_SetValue("mouse_pitch_inverted", list->curvalue);
 }
 
-static void MenuMouse_mouseSensitivity_callback(void *unused)
+static void MenuMouse_mousePitchInverted_callback(void *unused)
 {
-	MenuMouse_mouseSensitivity_apply();
+	 MenuMouse_mousePitchInverted_apply();
 }
 
-static int MenuMouse_mouseSensitivity_init(int y)
-{
-	menuslider_s *slider = &MenuMouse_mouseSensitivity_slider;
-	slider->generic.type = MTYPE_SLIDER;
-	slider->generic.x = 0;
-	slider->generic.y = y;
-	slider->generic.name = "mouse speed";
-	slider->generic.callback = MenuMouse_mouseSensitivity_callback;
-	slider->minvalue = 2;
-	slider->maxvalue = 22;
-	slider->curvalue = sensitivity->value * 2;
-	slider->savedValue = slider->curvalue;
-	Menu_AddItem(&MenuMouse_menu, (void *)slider);
-	y += 10;
-	return y;
-}
-
-//----------------------------------------
-// Invert mouse.
-//----------------------------------------
-static menulist_s MenuMouse_invertMouse_list;
-
-static void MenuMouse_invertMouse_apply()
-{
-	menulist_s *list = &MenuMouse_invertMouse_list;
-	float pitch = fabsf(m_pitch->value);
-	Cvar_SetValue("m_pitch", list->curvalue ? -pitch : pitch);
-}
-
-static void MenuMouse_invertMouse_callback(void *unused)
-{
-	MenuMouse_invertMouse_apply();
-}
-
-static int MenuMouse_invertMouse_init(int y)
+static int MenuMouse_mousePitchInverted_init(int y)
 {
 	static const char *itemNames[] =
 	{
@@ -64,16 +29,181 @@ static int MenuMouse_invertMouse_init(int y)
 		0
 	};
 
-	menulist_s *list = &MenuMouse_invertMouse_list;
+	menulist_s *list = & MenuMouse_mousePitchInverted_list;
 	list->generic.type = MTYPE_SPINCONTROL;
 	list->generic.x = 0;
 	list->generic.y = y;
-	list->generic.name = "invert mouse";
-	list->generic.callback = MenuMouse_invertMouse_callback;
+	list->generic.name = "invert mouse pitch";
+	list->generic.callback = MenuMouse_mousePitchInverted_callback;
 	list->itemnames = itemNames;
-	list->curvalue = (m_pitch->value < 0);
+	list->curvalue = (mouse_pitch_inverted->value != 0);
 	list->savedValue = list->curvalue;
 	Menu_AddItem(&MenuMouse_menu, (void *)list);
+	y += 10;
+	return y;
+}
+
+//----------------------------------------
+// Mouse linear sensivity.
+//----------------------------------------
+static menuslider_s MenuMouse_mouseLinearSensitivity_slider;
+
+static void MenuMouse_mouseLinearSensitivity_apply()
+{
+	menuslider_s *slider = &MenuMouse_mouseLinearSensitivity_slider;
+	Cvar_SetValue("mouse_linear_sensitivity", slider->curvalue / 2.0f);
+}
+
+static void MenuMouse_mouseLinearSensitivity_callback(void *unused)
+{
+	MenuMouse_mouseLinearSensitivity_apply();
+}
+
+static int MenuMouse_mouseLinearSensitivity_init(int y)
+{
+	menuslider_s *slider = &MenuMouse_mouseLinearSensitivity_slider;
+	slider->generic.type = MTYPE_SLIDER;
+	slider->generic.x = 0;
+	slider->generic.y = y;
+	slider->generic.name = "linear mouse sensivity";
+	slider->generic.callback = MenuMouse_mouseLinearSensitivity_callback;
+	slider->minvalue = 2;
+	slider->maxvalue = 20;
+	slider->curvalue = mouse_linear_sensitivity->value * 2;
+	slider->savedValue = slider->curvalue;
+	Menu_AddItem(&MenuMouse_menu, (void *)slider);
+	y += 10;
+	return y;
+}
+
+//----------------------------------------
+// Forward mouse speed.
+//----------------------------------------
+static menuslider_s MenuMouse_mouseSpeedForward_slider;
+
+static void MenuMouse_mouseSpeedForward_apply()
+{
+	menuslider_s *slider = &MenuMouse_mouseSpeedForward_slider;
+	Cvar_SetValue("mouse_speed_forward", slider->curvalue / 10.0f);
+}
+
+static void MenuMouse_mouseSpeedForward_callback(void *unused)
+{
+	MenuMouse_mouseSpeedForward_apply();
+}
+
+static int MenuMouse_mouseSpeedForward_init(int y)
+{
+	menuslider_s *slider = &MenuMouse_mouseSpeedForward_slider;
+	slider->generic.type = MTYPE_SLIDER;
+	slider->generic.x = 0;
+	slider->generic.y = y;
+	slider->generic.name = "forward mouse speed";
+	slider->generic.callback = MenuMouse_mouseSpeedForward_callback;
+	slider->minvalue = 5;
+	slider->maxvalue = 20;
+	slider->curvalue = mouse_speed_forward->value * 10.0f;
+	slider->savedValue = slider->curvalue;
+	Menu_AddItem(&MenuMouse_menu, (void *)slider);
+	y += 10;
+	return y;
+}
+
+//----------------------------------------
+// Side mouse speed.
+//----------------------------------------
+static menuslider_s MenuMouse_mouseSpeedSide_slider;
+
+static void MenuMouse_mouseSpeedSide_apply()
+{
+	menuslider_s *slider = &MenuMouse_mouseSpeedSide_slider;
+	Cvar_SetValue("mouse_speed_side", slider->curvalue / 10.0f);
+}
+
+static void MenuMouse_mouseSpeedSide_callback(void *unused)
+{
+	MenuMouse_mouseSpeedSide_apply();
+}
+
+static int MenuMouse_mouseSpeedSide_init(int y)
+{
+	menuslider_s *slider = &MenuMouse_mouseSpeedSide_slider;
+	slider->generic.type = MTYPE_SLIDER;
+	slider->generic.x = 0;
+	slider->generic.y = y;
+	slider->generic.name = "side mouse speed";
+	slider->generic.callback = MenuMouse_mouseSpeedSide_callback;
+	slider->minvalue = 1;
+	slider->maxvalue = 20;
+	slider->curvalue = mouse_speed_side->value * 10.0f;
+	slider->savedValue = slider->curvalue;
+	Menu_AddItem(&MenuMouse_menu, (void *)slider);
+	y += 10;
+	return y;
+}
+
+//----------------------------------------
+// Yaw mouse speed.
+//----------------------------------------
+static menuslider_s MenuMouse_mouseSpeedYaw_slider;
+
+static void MenuMouse_mouseSpeedYaw_apply()
+{
+	menuslider_s *slider = &MenuMouse_mouseSpeedYaw_slider;
+	Cvar_SetValue("mouse_speed_yaw", slider->curvalue / 1000.0f);
+}
+
+static void MenuMouse_mouseSpeedYaw_callback(void *unused)
+{
+	MenuMouse_mouseSpeedYaw_apply();
+}
+
+static int MenuMouse_mouseSpeedYaw_init(int y)
+{
+	menuslider_s *slider = &MenuMouse_mouseSpeedYaw_slider;
+	slider->generic.type = MTYPE_SLIDER;
+	slider->generic.x = 0;
+	slider->generic.y = y;
+	slider->generic.name = "yaw mouse speed";
+	slider->generic.callback = MenuMouse_mouseSpeedYaw_callback;
+	slider->minvalue = 11;
+	slider->maxvalue = 33;
+	slider->curvalue = mouse_speed_yaw->value * 1000.0f;
+	slider->savedValue = slider->curvalue;
+	Menu_AddItem(&MenuMouse_menu, (void *)slider);
+	y += 10;
+	return y;
+}
+
+//----------------------------------------
+// Pitch mouse speed.
+//----------------------------------------
+static menuslider_s MenuMouse_mouseSpeedPitch_slider;
+
+static void MenuMouse_mouseSpeedPitch_apply()
+{
+	menuslider_s *slider = &MenuMouse_mouseSpeedPitch_slider;
+	Cvar_SetValue("mouse_speed_pitch", slider->curvalue / 1000.0f);
+}
+
+static void MenuMouse_mouseSpeedPitch_callback(void *unused)
+{
+	MenuMouse_mouseSpeedPitch_apply();
+}
+
+static int MenuMouse_mouseSpeedPitch_init(int y)
+{
+	menuslider_s *slider = &MenuMouse_mouseSpeedPitch_slider;
+	slider->generic.type = MTYPE_SLIDER;
+	slider->generic.x = 0;
+	slider->generic.y = y;
+	slider->generic.name = "pitch mouse speed";
+	slider->generic.callback = MenuMouse_mouseSpeedPitch_callback;
+	slider->minvalue = 11;
+	slider->maxvalue = 33;
+	slider->curvalue = mouse_speed_pitch->value * 1000.0f;
+	slider->savedValue = slider->curvalue;
+	Menu_AddItem(&MenuMouse_menu, (void *)slider);
 	y += 10;
 	return y;
 }
@@ -90,8 +220,12 @@ static void MenuMouse_init()
 	menu->x = viddef.width / 2;
 	menu->nitems = 0;
 
-	y = MenuMouse_mouseSensitivity_init(y);
-	y = MenuMouse_invertMouse_init(y);
+	y = MenuMouse_mousePitchInverted_init(y);
+	y = MenuMouse_mouseLinearSensitivity_init(y);
+    y = MenuMouse_mouseSpeedForward_init(y);
+    y = MenuMouse_mouseSpeedSide_init(y);
+    y = MenuMouse_mouseSpeedYaw_init(y);
+    y = MenuMouse_mouseSpeedPitch_init(y);
 
 	Menu_CenterWithBanner(&MenuMouse_menu, "m_banner_options");
 }
@@ -104,14 +238,14 @@ static void MenuMouse_draw()
 	M_Popup();
 }
 
-static const char* MenuMouse_key(int key)
+static const char* MenuMouse_key(int key, int keyUnmodified)
 {
 	if (m_popup_string)
 	{
 		m_popup_string = NULL;
 		return NULL;
 	}
-	return Default_MenuKey(&MenuMouse_menu, key);
+	return Default_MenuKey(&MenuMouse_menu, key, keyUnmodified);
 }
 
 void MenuMouse_enter()

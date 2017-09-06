@@ -177,11 +177,9 @@ void Field_Draw(menufield_s *f)
 	Draw_CharEnd();
 }
 
-extern int keydown[];
-
 qboolean Field_Key(menufield_s *f, int key)
 {
-	if (key > 127)
+	if (key < 0 || key > 127)
 	{
 		return false;
 	}

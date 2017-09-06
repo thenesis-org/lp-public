@@ -123,7 +123,7 @@ static bool eglwFindConfig(EglwContext *eglw, const EglwConfigInfo *minimalCfgi,
     EGLint frameBufferAttributes[10*2+1];
     {
         EGLint *fba = frameBufferAttributes;
-        #if defined(GLES2)
+        #if defined(EGLW_GLES2)
         fba[0] = EGL_RENDERABLE_TYPE; fba[1] = EGL_OPENGL_ES2_BIT; fba += 2;
         #else
         fba[0] = EGL_RENDERABLE_TYPE; fba[1] = EGL_OPENGL_ES_BIT; fba += 2;

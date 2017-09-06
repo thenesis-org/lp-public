@@ -20,8 +20,8 @@ ifndef RESCOMP
 endif
 
 ifeq ($(config),release)
-  OBJDIR     = ../../../Output/Targets/Generic/Release/obj/ZLib
-  TARGETDIR  = ../../../Output/Targets/Generic/Release/lib
+  OBJDIR     = ../../../Output/Targets/Windows-x86-32/Release/obj/ZLib
+  TARGETDIR  = ../../../Output/Targets/Windows-x86-32/Release/lib
   TARGET     = $(TARGETDIR)/libZLib.a
   DEFINES   +=
   INCLUDES  += -I../../../../../Engine/External/Win32/include -I../../../../../Engine/External/include -I../../../../../Engine/External/Sources/zlib
@@ -29,7 +29,7 @@ ifeq ($(config),release)
   ALL_CFLAGS    += $(CFLAGS) $(ALL_CPPFLAGS) $(ARCH) -ffast-math -Wall -Wextra -O2 -std=c99 -Wno-unused-function -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-switch -Wno-missing-field-initializers -march=core2 -msse4.1 -mfpmath=sse
   ALL_CXXFLAGS  += $(CXXFLAGS) $(ALL_CFLAGS)
   ALL_RESFLAGS  += $(RESFLAGS) $(DEFINES) $(INCLUDES)
-  ALL_LDFLAGS   += $(LDFLAGS) -L../../../../../Engine/External/Win32/lib -L../../../Output/Targets/Generic/Release/lib -s -static-libgcc -static-libstdc++
+  ALL_LDFLAGS   += $(LDFLAGS) -L../../../../../Engine/External/Win32/lib -L../../../Output/Targets/Windows-x86-32/Release/lib -s -static-libgcc -static-libstdc++
   LDDEPS    +=
   LIBS      += $(LDDEPS)
   LINKCMD    = $(AR) -rcs $(TARGET) $(OBJECTS)
@@ -42,8 +42,8 @@ ifeq ($(config),release)
 endif
 
 ifeq ($(config),debug)
-  OBJDIR     = ../../../Output/Targets/Generic/Debug/obj/ZLib
-  TARGETDIR  = ../../../Output/Targets/Generic/Debug/lib
+  OBJDIR     = ../../../Output/Targets/Windows-x86-32/Debug/obj/ZLib
+  TARGETDIR  = ../../../Output/Targets/Windows-x86-32/Debug/lib
   TARGET     = $(TARGETDIR)/libZLib.a
   DEFINES   +=
   INCLUDES  += -I../../../../../Engine/External/Win32/include -I../../../../../Engine/External/include -I../../../../../Engine/External/Sources/zlib
@@ -51,7 +51,7 @@ ifeq ($(config),debug)
   ALL_CFLAGS    += $(CFLAGS) $(ALL_CPPFLAGS) $(ARCH) -ffast-math -Wall -Wextra -g -std=c99 -Wno-unused-function -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-switch -Wno-missing-field-initializers -march=core2 -msse4.1 -mfpmath=sse
   ALL_CXXFLAGS  += $(CXXFLAGS) $(ALL_CFLAGS)
   ALL_RESFLAGS  += $(RESFLAGS) $(DEFINES) $(INCLUDES)
-  ALL_LDFLAGS   += $(LDFLAGS) -L../../../../../Engine/External/Win32/lib -L../../../Output/Targets/Generic/Debug/lib -static-libgcc -static-libstdc++
+  ALL_LDFLAGS   += $(LDFLAGS) -L../../../../../Engine/External/Win32/lib -L../../../Output/Targets/Windows-x86-32/Debug/lib -static-libgcc -static-libstdc++
   LDDEPS    +=
   LIBS      += $(LDDEPS)
   LINKCMD    = $(AR) -rcs $(TARGET) $(OBJECTS)

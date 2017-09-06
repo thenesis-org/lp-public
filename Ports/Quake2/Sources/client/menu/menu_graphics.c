@@ -9,9 +9,6 @@ extern cvar_t *cl_drawfps;
 
 static menuframework_s MenuGraphics_menu;
 
-static void MenuGraphics_draw();
-static const char* MenuGraphics_key(int key);
-
 static const char *yesno_names[] =
 {
 	"no",
@@ -431,7 +428,7 @@ static int MenuGraphics_anisotropicFiltering_init(int y)
 //----------------------------------------
 // Particle mode.
 //----------------------------------------
-#if defined(GLES1)
+#if defined(EGLW_GLES1)
 
 typedef enum
 {
@@ -745,6 +742,18 @@ static int MenuGraphics_flash_init(int y)
 //----------------------------------------
 // MenuGraphics.
 //----------------------------------------
+static void MenuGraphics_draw()
+{
+	M_Banner("m_banner_video");
+	Menu_AdjustCursor(&MenuGraphics_menu, 1);
+	Menu_Draw(&MenuGraphics_menu);
+}
+
+static const char* MenuGraphics_key(int key, int keyUnmodified)
+{
+	return Default_MenuKey(&MenuGraphics_menu, key, keyUnmodified);
+}
+
 void MenuGraphics_init()
 {
 	int y = 10;
@@ -771,7 +780,7 @@ void MenuGraphics_init()
 	{
 		y = MenuGraphics_anisotropicFiltering_init(y);
 	}
-	#if defined(GLES1)
+	#if defined(EGLW_GLES1)
 	y = MenuGraphics_particleMode_init(y);
 	#endif
 	y = MenuGraphics_particleSize_init(y);
@@ -804,23 +813,11 @@ void MenuGraphics_apply()
 	{
 		MenuGraphics_anisotropicFiltering_apply();
 	}
-	#if defined(GLES1)
+	#if defined(EGLW_GLES1)
 	MenuGraphics_particleMode_apply();
 	#endif
 	MenuGraphics_particleSize_apply();
 	MenuGraphics_shadowMode_apply();
 	MenuGraphics_lighting_apply();
 	MenuGraphics_flash_apply();
-}
-
-static void MenuGraphics_draw()
-{
-	M_Banner("m_banner_video");
-	Menu_AdjustCursor(&MenuGraphics_menu, 1);
-	Menu_Draw(&MenuGraphics_menu);
-}
-
-static const char* MenuGraphics_key(int key)
-{
-	return Default_MenuKey(&MenuGraphics_menu, key);
 }

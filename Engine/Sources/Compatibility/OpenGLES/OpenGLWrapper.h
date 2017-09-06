@@ -15,7 +15,7 @@
 //--------------------------------------------------------------------------------
 // Compatibility constants.
 //--------------------------------------------------------------------------------
-#if defined(GLES2)
+#if defined(EGLW_GLES2)
 #define GL_MODELVIEW 0x1700
 #define GL_PROJECTION 0x1701
 #define GL_MODULATE 0x2100
@@ -30,6 +30,12 @@
 bool oglwCreate();
 void oglwDestroy();
 bool oglwIsCreated();
+
+//--------------------------------------------------------------------------------
+// Viewport.
+//--------------------------------------------------------------------------------
+void oglwSetViewport(int x, int y, int w, int h);
+void oglwSetDepthRange(float depthNear, float depthFar);
 
 //--------------------------------------------------------------------------------
 // Matrix stacks.
@@ -91,11 +97,11 @@ void oglwClear(GLbitfield mask);
 //--------------------------------------------------------------------------------
 // Drawing.
 //--------------------------------------------------------------------------------
-typedef struct OpenGLWrapperVertex_ {
+typedef struct oglwVertex_ {
     float position[4];
     float color[4];
     float texCoord[2][4];
-} OpenGLWrapperVertex;
+} OglwVertex;
 
 void oglwPointSize(float size);
 
@@ -113,13 +119,13 @@ void oglwUpdateStateWriteMask();
 void oglwReset();
 bool oglwIsEmpty();
 
-OpenGLWrapperVertex* oglwAllocateVertex(int vertexNb);
+OglwVertex* oglwAllocateVertex(int vertexNb);
 GLushort* oglwAllocateIndex(int indexNb);
-OpenGLWrapperVertex* oglwAllocateLineStrip(int vertexNb);
-OpenGLWrapperVertex* oglwAllocateLineLoop(int vertexNb);
-OpenGLWrapperVertex* oglwAllocateQuad(int vertexNb);
-OpenGLWrapperVertex* oglwAllocateTriangleFan(int vertexNb);
-OpenGLWrapperVertex* oglwAllocateTriangleStrip(int vertexNb);
+OglwVertex* oglwAllocateLineStrip(int vertexNb);
+OglwVertex* oglwAllocateLineLoop(int vertexNb);
+OglwVertex* oglwAllocateQuad(int vertexNb);
+OglwVertex* oglwAllocateTriangleFan(int vertexNb);
+OglwVertex* oglwAllocateTriangleStrip(int vertexNb);
 
 void oglwVertex2f(GLfloat x, GLfloat y);
 void oglwVertex2i(GLint x, GLint y);
@@ -152,43 +158,43 @@ static inline void Vertex_set4(float *t, float x, float y, float z, float w)
     t[0]=x; t[1]=y; t[2]=z; t[3]=w;
 }
 
-static inline OpenGLWrapperVertex* AddVertex3D(OpenGLWrapperVertex *v, float px, float py, float pz)
+static inline OglwVertex* AddVertex3D(OglwVertex *v, float px, float py, float pz)
 {
     Vertex_set3(v->position, px, py, pz); Vertex_set4(v->color, 1.0f, 1.0f, 1.0f, 1.0f); v++;
     return v;
 }
 
-static inline OpenGLWrapperVertex* AddVertex3D_C(OpenGLWrapperVertex *v, float px, float py, float pz, float r, float g, float b, float a)
+static inline OglwVertex* AddVertex3D_C(OglwVertex *v, float px, float py, float pz, float r, float g, float b, float a)
 {
     Vertex_set3(v->position, px, py, pz); Vertex_set4(v->color, r, g, b, a); v++;
     return v;
 }
 
-static inline OpenGLWrapperVertex* AddVertex3D_T1(OpenGLWrapperVertex *v, float px, float py, float pz, float tx, float ty)
+static inline OglwVertex* AddVertex3D_T1(OglwVertex *v, float px, float py, float pz, float tx, float ty)
 {
     Vertex_set3(v->position, px, py, pz); Vertex_set4(v->color, 1.0f, 1.0f, 1.0f, 1.0f); Vertex_set2(v->texCoord[0], tx, ty); v++;
     return v;
 }
 
-static inline OpenGLWrapperVertex* AddVertex3D_CT1(OpenGLWrapperVertex *v, float px, float py, float pz, float r, float g, float b, float a, float tx, float ty)
+static inline OglwVertex* AddVertex3D_CT1(OglwVertex *v, float px, float py, float pz, float r, float g, float b, float a, float tx, float ty)
 {
     Vertex_set3(v->position, px, py, pz); Vertex_set4(v->color, r, g, b, a); Vertex_set2(v->texCoord[0], tx, ty); v++;
     return v;
 }
 
-static inline OpenGLWrapperVertex* AddVertex3D_T2(OpenGLWrapperVertex *v, float px, float py, float pz, float tx0, float ty0, float tx1, float ty1)
+static inline OglwVertex* AddVertex3D_T2(OglwVertex *v, float px, float py, float pz, float tx0, float ty0, float tx1, float ty1)
 {
     Vertex_set3(v->position, px, py, pz); Vertex_set4(v->color, 1.0f, 1.0f, 1.0f, 1.0f); Vertex_set2(v->texCoord[0], tx0, ty0); Vertex_set2(v->texCoord[1], tx1, ty1); v++;
     return v;
 }
 
-static inline OpenGLWrapperVertex* AddVertex3D_CT2(OpenGLWrapperVertex *v, float px, float py, float pz, float r, float g, float b, float a, float tx0, float ty0, float tx1, float ty1)
+static inline OglwVertex* AddVertex3D_CT2(OglwVertex *v, float px, float py, float pz, float r, float g, float b, float a, float tx0, float ty0, float tx1, float ty1)
 {
     Vertex_set3(v->position, px, py, pz); Vertex_set4(v->color, r, g, b, a); Vertex_set2(v->texCoord[0], tx0, ty0); Vertex_set2(v->texCoord[1], tx1, ty1); v++;
     return v;
 }
 
-static inline OpenGLWrapperVertex* AddQuad2D_C(OpenGLWrapperVertex *v, float px0, float py0, float px1, float py1, float r, float g, float b, float a)
+static inline OglwVertex* AddQuad2D_C(OglwVertex *v, float px0, float py0, float px1, float py1, float r, float g, float b, float a)
 {
     Vertex_set2(v->position, px0, py0); Vertex_set4(v->color, r, g, b, a); v++;
     Vertex_set2(v->position, px1, py0); Vertex_set4(v->color, r, g, b, a); v++;
@@ -197,7 +203,7 @@ static inline OpenGLWrapperVertex* AddQuad2D_C(OpenGLWrapperVertex *v, float px0
     return v;
 }
 
-static inline OpenGLWrapperVertex* AddQuad2D_T1(OpenGLWrapperVertex *v, float px0, float py0, float px1, float py1, float tpx0, float tpy0, float tpx1, float tpy1)
+static inline OglwVertex* AddQuad2D_T1(OglwVertex *v, float px0, float py0, float px1, float py1, float tpx0, float tpy0, float tpx1, float tpy1)
 {
     Vertex_set2(v->position, px0, py0); Vertex_set4(v->color, 1.0f, 1.0f, 1.0f, 1.0f); Vertex_set2(v->texCoord[0], tpx0, tpy0); v++;
     Vertex_set2(v->position, px1, py0); Vertex_set4(v->color, 1.0f, 1.0f, 1.0f, 1.0f); Vertex_set2(v->texCoord[0], tpx1, tpy0); v++;
@@ -206,7 +212,7 @@ static inline OpenGLWrapperVertex* AddQuad2D_T1(OpenGLWrapperVertex *v, float px
     return v;
 }
 
-static inline OpenGLWrapperVertex* AddQuad2D_CT1(OpenGLWrapperVertex *v, float px0, float py0, float px1, float py1, float r, float g, float b, float a, float tpx0, float tpy0, float tpx1, float tpy1)
+static inline OglwVertex* AddQuad2D_CT1(OglwVertex *v, float px0, float py0, float px1, float py1, float r, float g, float b, float a, float tpx0, float tpy0, float tpx1, float tpy1)
 {
     Vertex_set2(v->position, px0, py0); Vertex_set4(v->color, r, g, b, a); Vertex_set2(v->texCoord[0], tpx0, tpy0); v++;
     Vertex_set2(v->position, px1, py0); Vertex_set4(v->color, r, g, b, a); Vertex_set2(v->texCoord[0], tpx1, tpy0); v++;

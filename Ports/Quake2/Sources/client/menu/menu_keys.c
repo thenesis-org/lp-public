@@ -1,11 +1,7 @@
 #include "client/menu/menu.h"
 
-char *bindnames[][2] =
+static char *bindnames[][2] =
 {
-	{ "+attack", "attack" },
-	{ "weapnext", "next weapon" },
-	{ "weapprev", "previous weapon" },
-
 	{ "+speed", "run" },
 	{ "+forward", "walk forward" },
 	{ "+back", "backpedal" },
@@ -26,35 +22,101 @@ char *bindnames[][2] =
 	{ "+mlook", "mouse look" },
 	{ "centerview", "center view" },
 
-	{ "inven", "inventory" },
-	{ "invuse", "use item" },
-	{ "invdrop", "drop item" },
-	{ "invprev", "prev item" },
-	{ "invnext", "next item" },
+    { NULL, NULL },
 
-	{ "cmd help", "help computer" },
+	{ "+attack", "attack" },
 
-	{ "use BFG10K", "BFG10K" },
+	{ "weapnext", "next weapon" },
+	{ "weapprev", "previous weapon" },
+	{ "weaplast", "last weapon" },
 	{ "use Blaster", "Blaster" },
 	{ "use Shotgun", "Shotgun" },
 	{ "use Super Shotgun", "Super Shotgun" },
 	{ "use Machinegun", "Machinegun" },
 	{ "use Chaingun", "Chaingun" },
+	{ "use Grenades", "Grenades" },
 	{ "use Grenade Launcher", "Grenade Launcher" },
 	{ "use Rocket Launcher", "Rocket Launcher" },
 	{ "use HyperBlaster", "HyperBlaster" },
 	{ "use Railgun", "Railgun" },
+	{ "use BFG10K", "BFG10K" },
+	{ "use Trap", "Trap (xatrix)" },
+	{ "use IonRipper", "IonRipper (xatrix)" },
+	{ "use Phalanx", "Phalanx (xatrix)" },
+	{ "use ETF Rifle", "ETF Rifle (rogue)" },
+	{ "use Prox Launcher", "Prox Launcher (rogue)" },
+	{ "use Plasma Beam", "Plasma Beam (rogue)" },
+	{ "use Chainfist", "Chainfist (rogue)" },
+	{ "use Disruptor", "Disruptor (rogue)" },
 
-	{ "messagemode", "message" },
+    { NULL, NULL },
 
+	{ "inven", "inventory" },
+	{ "invuse", "use item" },
+	{ "invdrop", "drop item" },
+	{ "invprev", "prev item" },
+	{ "invnext", "next item" },
+    { "use quad damage", "quad damage" },
+    { "use invulnerability", "invulnerability" },
+    { "use silencer", "silencer" },
+    { "use rebreather", "rebreather" },
+    { "use environment suit", "environment suit" },
+    { "use power shield", "power shield" },
+    { "use dualfire damage", "dualfire damage (xatrix)" },
+    { "use IR Goggles", "IR Goggles (rogue)" },
+    { "use Double Damage", "Double Damage (rogue)" },
+    { "use compass", "compass (rogue)" },
+    { "use vengeance sphere", "vengeance sphere (rogue)" },
+    { "use hunter sphere", "hunter sphere (rogue)" },
+    { "use defender sphere", "defender sphere (rogue)" },
+    { "use Doppleganger", "Doppleganger (rogue)" },
+
+    { NULL, NULL },
+
+	{ "cmd help", "help computer" },
+	{ "togglepause", "toggle pause" },
+	{ "+pause", "pause" },
 	{ "echo Quick Saving...; wait; save quick", "save quick" },
 	{ "echo Quick Loading...; wait; load quick", "load quick" },
 	{ "screenshot", "screenshot" },
+	{ "toggleconsole", "toggle console" },
 
-	{ "god mode", "god" },
-	{ "no clip", "noclip" },
-	{ "no target", "notarget" },
-	{ "all items", "give all" },
+    { NULL, NULL },
+
+	{ "messagemode", "message" },
+	{ "messagemode2", "team message" },
+	{ "togglechat", "toggle chat" },
+	{ "wave 1", "wave 1" },
+	{ "wave 2", "wave 2" },
+	{ "wave 3", "wave 3" },
+	{ "wave 4", "wave 4" },
+	{ "kill", "kill yourself" },
+
+    { NULL, NULL },
+
+	{ "god", "god mode" },
+	{ "noclip", "no clip" },
+	{ "notarget", "no target" },
+	{ "give all", "all items" },
+
+    { NULL, NULL },
+
+	{ "menu_video", "video menu" },
+	{ "menu_options", "options menu" },
+	{ "menu_keys", "keys menu" },
+	{ "menu_quit", "quit menu" },
+	{ "menu_main", "main menu" },
+	{ "menu_game", "game menu" },
+	{ "menu_loadgame", "load menu" },
+	{ "menu_savegame", "save menu" },
+	{ "menu_multiplayer", "multiplayer menu" },
+	{ "menu_joinserver", "join server menu" },
+	{ "menu_addressbook", "address book menu" },
+	{ "menu_startserver", "start server menu" },
+	{ "menu_dmoptions", "deathmatch menu" },
+	{ "menu_playerconfig", "player menu" },
+	{ "menu_downloadoptions", "download menu" },
+	{ "menu_credits", "credits menu" },
 };
 #define NUM_BINDNAMES (int)(sizeof bindnames / sizeof bindnames[0])
 
@@ -72,43 +134,29 @@ static void M_UnbindCommand(char *command)
 	for (int j = 0; j < 256; j++)
 	{
 		char *b = keybindings[j];
-
 		if (!b)
-		{
 			continue;
-		}
-
 		if (!strncmp(b, command, l))
-		{
 			Key_SetBinding(j, "");
-		}
 	}
 }
 
 static void M_FindKeysForCommand(char *command, int *twokeys)
 {
-	twokeys[0] = twokeys[1] = -1;
 	int l = Q_strlen(command);
 	int count = 0;
-
+	twokeys[0] = twokeys[1] = -1;
 	for (int j = 0; j < 256; j++)
 	{
 		char *b = keybindings[j];
-
 		if (!b)
-		{
 			continue;
-		}
-
 		if (!strncmp(b, command, l))
 		{
 			twokeys[count] = j;
 			count++;
-
 			if (count == 2)
-			{
 				break;
-			}
 		}
 	}
 }
@@ -120,14 +168,9 @@ static void KeyCursorDrawFunc(menuframework_s *menu)
 	{
 		float scale = SCR_GetMenuScale();
 		if (bind_grab)
-		{
 			Draw_CharScaled(menu->x + item->x, (menu->y + item->y) * scale, '=', scale);
-		}
 		else
-		{
-			Draw_CharScaled(menu->x + item->x, (menu->y + item->y) * scale, 12 +
-				((int)(Sys_Milliseconds() / 250) & 1), scale);
-		}
+			Draw_CharScaled(menu->x + item->x, (menu->y + item->y) * scale, 12 + ((int)(Sys_Milliseconds() / 250) & 1), scale);
 	}
 }
 
@@ -143,8 +186,7 @@ static void DrawKeyBindingFunc(void *self)
 
 	if (keys[0] == -1)
 	{
-		Menu_DrawString(a->generic.x + a->generic.parent->x + 16 * scale,
-			a->generic.y + a->generic.parent->y, "???");
+		Menu_DrawString(a->generic.x + a->generic.parent->x + 16 * scale, a->generic.y + a->generic.parent->y, "???");
 	}
 	else
 	{
@@ -168,6 +210,15 @@ static void DrawKeyBindingFunc(void *self)
 	Draw_CharEnd();
 }
 
+static void MenuKeys_resetStatusBar(menuframework_s *menu)
+{
+	#if defined(GAMEPAD_ONLY)
+	Menu_SetStatusBar(menu, "A to change, Y to clear");
+	#else
+	Menu_SetStatusBar(menu, "ENTER to change, BACKSPACE to clear");
+	#endif
+}
+
 static void KeyBindingFunc(void *self)
 {
 	menuaction_s *a = (menuaction_s *)self;
@@ -176,9 +227,7 @@ static void KeyBindingFunc(void *self)
 	int keys[2];
 	M_FindKeysForCommand(bindCommand, keys);
 	if (keys[1] != -1)
-	{
 		M_UnbindCommand(bindCommand);
-	}
 
 	bind_grab = true;
 
@@ -200,22 +249,18 @@ static void Keys_MenuInit()
 
 	for (int i = 0; i < NUM_BINDNAMES; i++)
 	{
-		menuaction_s *action = &s_keys_actions[i];
-		action->generic.type = MTYPE_ACTION;
-		action->generic.flags = QMF_GRAYED;
-		action->generic.x = 0;
-		action->generic.y = ((i % KEYS_PER_PAGE) * 9);
-		action->generic.ownerdraw = DrawKeyBindingFunc;
-		action->generic.localdata[0] = i;
-		action->generic.name = bindnames[i][1];
-		Menu_AddItem(menu, (void *)action);
+        menuaction_s *action = &s_keys_actions[i];
+        action->generic.type = bindnames[i][0] != NULL && bindnames[i][1] != NULL ? MTYPE_ACTION : MTYPE_SEPARATOR;
+        action->generic.flags = QMF_GRAYED;
+        action->generic.x = 0;
+        action->generic.y = ((i % KEYS_PER_PAGE) * 9);
+        action->generic.ownerdraw = DrawKeyBindingFunc;
+        action->generic.localdata[0] = i;
+        action->generic.name = bindnames[i][1];
+        Menu_AddItem(menu, (void *)action);
 	}
 
-	#if defined(GAMEPAD_ONLY)
-	Menu_SetStatusBar(menu, "A to change, Y to clear");
-	#else
-	Menu_SetStatusBar(menu, "ENTER to change, BACKSPACE to clear");
-	#endif
+    MenuKeys_resetStatusBar(menu);
 	Menu_Center(menu);
 }
 
@@ -226,27 +271,21 @@ static void Keys_MenuDraw()
 	Menu_Draw(menu);
 }
 
-static const char* Keys_MenuKey(int key)
+static const char* Keys_MenuKey(int key, int keyUnmodified)
 {
 	menuframework_s *menu = &s_keys_menu;
 	menuaction_s *item = (menuaction_s *)Menu_ItemAtCursor(menu);
 
 	if (bind_grab)
 	{
-		if ((key != K_GAMEPAD_SELECT) && (key != K_ESCAPE) && (key != '`'))
+		if (keyUnmodified > 0 && keyUnmodified != K_GAMEPAD_SELECT && keyUnmodified != K_ESCAPE)
 		{
 			char cmd[1024];
-
-			Com_sprintf(cmd, sizeof(cmd), "bind \"%s\" \"%s\"\n",
-				Key_KeynumToString(key), bindnames[item->generic.localdata[0]][0]);
+			Com_sprintf(cmd, sizeof(cmd), "bind \"%s\" \"%s\"\n", Key_KeynumToString(keyUnmodified), bindnames[item->generic.localdata[0]][0]);
 			Cbuf_InsertText(cmd);
 		}
 
-		#if defined(GAMEPAD_ONLY)
-		Menu_SetStatusBar(menu, "A to change, Y to clear");
-		#else
-		Menu_SetStatusBar(menu, "ENTER to change, BACKSPACE to clear");
-		#endif
+        MenuKeys_resetStatusBar(menu);
 		bind_grab = false;
 		return menu_out_sound;
 	}
@@ -284,7 +323,7 @@ static const char* Keys_MenuKey(int key)
 		return menu_in_sound;
 
 	default:
-		return Default_MenuKey(menu, key);
+		return Default_MenuKey(menu, key, keyUnmodified);
 	}
 }
 

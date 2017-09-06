@@ -20,8 +20,8 @@ ifndef RESCOMP
 endif
 
 ifeq ($(config),release)
-  OBJDIR     = ../../../Output/Targets/Generic/Release/obj/ZLib
-  TARGETDIR  = ../../../Output/Targets/Generic/Release/lib
+  OBJDIR     = ../../../Output/Targets/RaspberryPi/Release/obj/ZLib
+  TARGETDIR  = ../../../Output/Targets/RaspberryPi/Release/lib
   TARGET     = $(TARGETDIR)/libZLib.a
   DEFINES   += -D__RASPBERRY_PI__
   INCLUDES  += -I/opt/vc/include -I../../../../../Engine/External/include -I../../../../../Engine/External/Sources/zlib
@@ -29,7 +29,7 @@ ifeq ($(config),release)
   ALL_CFLAGS    += $(CFLAGS) $(ALL_CPPFLAGS) $(ARCH) -ffast-math -Wall -Wextra -O2 -std=gnu99 -Wno-unused-function -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-switch -Wno-missing-field-initializers -fPIC -fvisibility=hidden
   ALL_CXXFLAGS  += $(CXXFLAGS) $(ALL_CFLAGS)
   ALL_RESFLAGS  += $(RESFLAGS) $(DEFINES) $(INCLUDES)
-  ALL_LDFLAGS   += $(LDFLAGS) -L../../../Output/Targets/Generic/Release/lib -s
+  ALL_LDFLAGS   += $(LDFLAGS) -L../../../Output/Targets/RaspberryPi/Release/lib -s
   LDDEPS    +=
   LIBS      += $(LDDEPS)
   LINKCMD    = $(AR) -rcs $(TARGET) $(OBJECTS)
@@ -42,8 +42,8 @@ ifeq ($(config),release)
 endif
 
 ifeq ($(config),debug)
-  OBJDIR     = ../../../Output/Targets/Generic/Debug/obj/ZLib
-  TARGETDIR  = ../../../Output/Targets/Generic/Debug/lib
+  OBJDIR     = ../../../Output/Targets/RaspberryPi/Debug/obj/ZLib
+  TARGETDIR  = ../../../Output/Targets/RaspberryPi/Debug/lib
   TARGET     = $(TARGETDIR)/libZLib.a
   DEFINES   += -D__RASPBERRY_PI__
   INCLUDES  += -I/opt/vc/include -I../../../../../Engine/External/include -I../../../../../Engine/External/Sources/zlib
@@ -51,7 +51,7 @@ ifeq ($(config),debug)
   ALL_CFLAGS    += $(CFLAGS) $(ALL_CPPFLAGS) $(ARCH) -ffast-math -Wall -Wextra -g -std=gnu99 -Wno-unused-function -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-switch -Wno-missing-field-initializers -fPIC -fvisibility=hidden
   ALL_CXXFLAGS  += $(CXXFLAGS) $(ALL_CFLAGS)
   ALL_RESFLAGS  += $(RESFLAGS) $(DEFINES) $(INCLUDES)
-  ALL_LDFLAGS   += $(LDFLAGS) -L../../../Output/Targets/Generic/Debug/lib
+  ALL_LDFLAGS   += $(LDFLAGS) -L../../../Output/Targets/RaspberryPi/Debug/lib
   LDDEPS    +=
   LIBS      += $(LDDEPS)
   LINKCMD    = $(AR) -rcs $(TARGET) $(OBJECTS)

@@ -26,6 +26,10 @@
 
 #include "server/server.h"
 
+#include <stdbool.h>
+
+void CL_Pause(bool pauseFlag);
+
 server_static_t svs; /* persistant server info */
 server_t sv; /* local server */
 
@@ -177,9 +181,7 @@ void SV_SpawnServer(char *server, char *spawnpoint, server_state_t serverstate, 
 	unsigned checksum;
 
 	if (attractloop)
-	{
-		Cvar_Set("paused", "0");
-	}
+        CL_Pause(false);
 
 	Com_Printf("------- server initialization ------\n");
 	Com_DPrintf("SpawnServer: %s\n", server);

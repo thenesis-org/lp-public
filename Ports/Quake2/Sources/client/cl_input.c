@@ -26,7 +26,7 @@
  */
 
 #include "client/client.h"
-#include "backends/generic/input.h"
+#include "backends/input.h"
 
 cvar_t *cl_nodelta;
 
@@ -50,13 +50,10 @@ unsigned old_sys_frame_time;
  * state bit 1 is edge triggered on the up to down transition
  * state bit 2 is edge triggered on the down to up transition
  *
- *
- * Key_Event (int key, qboolean down, unsigned time);
- *
  *   +mlook src time
  */
 
-kbutton_t in_klook;
+kbutton_t in_mlook, in_klook;
 kbutton_t in_left, in_right, in_forward, in_back;
 kbutton_t in_lookup, in_lookdown, in_moveleft, in_moveright;
 kbutton_t in_strafe, in_speed, in_use, in_attack;
@@ -72,28 +69,17 @@ void KeyDown(kbutton_t *b)
 	c = Cmd_Argv(1);
 
 	if (c[0])
-	{
 		k = (int)strtol(c, (char **)NULL, 10);
-	}
 	else
-	{
 		k = -1; /* typed manually at the console for continuous down */
-	}
 
 	if ((k == b->down[0]) || (k == b->down[1]))
-	{
 		return; /* repeating key */
-	}
 
 	if (!b->down[0])
-	{
 		b->down[0] = k;
-	}
-	else
-	if (!b->down[1])
-	{
+	else if (!b->down[1])
 		b->down[1] = k;
-	}
 	else
 	{
 		Com_Printf("Three keys down for a button!\n");
@@ -101,18 +87,14 @@ void KeyDown(kbutton_t *b)
 	}
 
 	if (b->state & 1)
-	{
 		return; /* still down */
-	}
 
 	/* save timestamp */
 	c = Cmd_Argv(2);
 	b->downtime = (int)strtol(c, (char **)NULL, 10);
 
 	if (!b->downtime)
-	{
 		b->downtime = sys_frame_time - 100;
-	}
 
 	b->state |= 1 + 2; /* down + impulse down */
 }
@@ -138,77 +120,72 @@ void KeyUp(kbutton_t *b)
 	}
 
 	if (b->down[0] == k)
-	{
 		b->down[0] = 0;
-	}
-	else
-	if (b->down[1] == k)
-	{
+	else if (b->down[1] == k)
 		b->down[1] = 0;
-	}
 	else
-	{
 		return; /* key up without coresponding down (menu pass through) */
-	}
 
 	if (b->down[0] || b->down[1])
-	{
 		return; /* some other key is still holding it down */
-	}
 
 	if (!(b->state & 1))
-	{
 		return; /* still up (this should not happen) */
-	}
 
 	/* save timestamp */
 	c = Cmd_Argv(2);
 	uptime = (int)strtol(c, (char **)NULL, 10);
-
 	if (uptime)
-	{
 		b->msec += uptime - b->downtime;
-	}
 	else
-	{
 		b->msec += 10;
-	}
 
 	b->state &= ~1; /* now up */
 	b->state |= 4; /* impulse up */
 }
 
-void IN_KLookDown(void)
+void IN_KLookDown()
 {
 	KeyDown(&in_klook);
 }
 
-void IN_KLookUp(void)
+void IN_KLookUp()
 {
 	KeyUp(&in_klook);
 }
 
-void IN_UpDown(void)
+static void IN_MLookDown()
+{
+	KeyDown(&in_mlook);
+}
+
+static void IN_MLookUp()
+{
+	KeyUp(&in_mlook);
+	IN_CenterView();
+}
+
+void IN_UpDown()
 {
 	KeyDown(&in_up);
 }
 
-void IN_UpUp(void)
+void IN_UpUp()
 {
 	KeyUp(&in_up);
 }
 
-void IN_DownDown(void)
+void IN_DownDown()
 {
 	KeyDown(&in_down);
 }
 
-void IN_DownUp(void)
+void IN_DownUp()
 {
 	KeyUp(&in_down);
 }
 
-void IN_DownToggleDown(void)
+void IN_DownToggleDown()
 {
 	if (CL_KeyState(&in_down) > 0.0f)
 		KeyUp(&in_down);
@@ -216,132 +193,132 @@ void IN_DownToggleDown(void)
 		KeyDown(&in_down);
 }
 
-void IN_DownToggleUp(void)
+void IN_DownToggleUp()
 {
 	// Nothing because this is a toggle.
 }
 
-void IN_LeftDown(void)
+void IN_LeftDown()
 {
 	KeyDown(&in_left);
 }
 
-void IN_LeftUp(void)
+void IN_LeftUp()
 {
 	KeyUp(&in_left);
 }
 
-void IN_RightDown(void)
+void IN_RightDown()
 {
 	KeyDown(&in_right);
 }
 
-void IN_RightUp(void)
+void IN_RightUp()
 {
 	KeyUp(&in_right);
 }
 
-void IN_ForwardDown(void)
+void IN_ForwardDown()
 {
 	KeyDown(&in_forward);
 }
 
-void IN_ForwardUp(void)
+void IN_ForwardUp()
 {
 	KeyUp(&in_forward);
 }
 
-void IN_BackDown(void)
+void IN_BackDown()
 {
 	KeyDown(&in_back);
 }
 
-void IN_BackUp(void)
+void IN_BackUp()
 {
 	KeyUp(&in_back);
 }
 
-void IN_LookupDown(void)
+void IN_LookupDown()
 {
 	KeyDown(&in_lookup);
 }
 
-void IN_LookupUp(void)
+void IN_LookupUp()
 {
 	KeyUp(&in_lookup);
 }
 
-void IN_LookdownDown(void)
+void IN_LookdownDown()
 {
 	KeyDown(&in_lookdown);
 }
 
-void IN_LookdownUp(void)
+void IN_LookdownUp()
 {
 	KeyUp(&in_lookdown);
 }
 
-void IN_MoveleftDown(void)
+void IN_MoveleftDown()
 {
 	KeyDown(&in_moveleft);
 }
 
-void IN_MoveleftUp(void)
+void IN_MoveleftUp()
 {
 	KeyUp(&in_moveleft);
 }
 
-void IN_MoverightDown(void)
+void IN_MoverightDown()
 {
 	KeyDown(&in_moveright);
 }
 
-void IN_MoverightUp(void)
+void IN_MoverightUp()
 {
 	KeyUp(&in_moveright);
 }
 
-void IN_SpeedDown(void)
+void IN_SpeedDown()
 {
 	KeyDown(&in_speed);
 }
 
-void IN_SpeedUp(void)
+void IN_SpeedUp()
 {
 	KeyUp(&in_speed);
 }
 
-void IN_StrafeDown(void)
+void IN_StrafeDown()
 {
 	KeyDown(&in_strafe);
 }
 
-void IN_StrafeUp(void)
+void IN_StrafeUp()
 {
 	KeyUp(&in_strafe);
 }
 
-void IN_AttackDown(void)
+void IN_AttackDown()
 {
 	KeyDown(&in_attack);
 }
 
-void IN_AttackUp(void)
+void IN_AttackUp()
 {
 	KeyUp(&in_attack);
 }
 
-void IN_UseDown(void)
+void IN_UseDown()
 {
 	KeyDown(&in_use);
 }
 
-void IN_UseUp(void)
+void IN_UseUp()
 {
 	KeyUp(&in_use);
 }
 
-void IN_Impulse(void)
+void IN_Impulse()
 {
 	in_impulse = (int)strtol(Cmd_Argv(1), (char **)NULL, 10);
 }
@@ -368,62 +345,52 @@ float CL_KeyState(kbutton_t *key)
 	}
 
 	val = (float)msec / frame_msec;
-
 	if (val < 0)
-	{
 		val = 0;
-	}
-
 	if (val > 1)
-	{
 		val = 1;
-	}
 
 	return val;
 }
 
-cvar_t *cl_upspeed;
-cvar_t *cl_forwardspeed;
-cvar_t *cl_sidespeed;
-cvar_t *cl_yawspeed;
-cvar_t *cl_pitchspeed;
+cvar_t *cl_speed_up;
+cvar_t *cl_speed_forward;
+cvar_t *cl_speed_side;
+cvar_t *cl_speed_yaw;
+cvar_t *cl_speed_pitch;
 cvar_t *cl_run;
 cvar_t *cl_anglespeedkey;
 
 /*
  * Moves the local angle positions
  */
-void CL_AdjustAngles(void)
+void CL_AdjustAngles()
 {
-	float speed;
-	float up, down;
-
+	float speed = cls.frametime;
 	if (in_speed.state & 1)
-	{
-		speed = cls.frametime * cl_anglespeedkey->value;
-	}
-	else
-	{
-		speed = cls.frametime;
-	}
+		speed *= cl_anglespeedkey->value;
 
+    float yaw = cl.viewangles[YAW];
 	if (!(in_strafe.state & 1))
 	{
-		cl.viewangles[YAW] -= speed * cl_yawspeed->value * CL_KeyState(&in_right);
-		cl.viewangles[YAW] += speed * cl_yawspeed->value * CL_KeyState(&in_left);
+        float yawSpeed = cl_speed_yaw->value;
+		yaw -= speed * yawSpeed * CL_KeyState(&in_right);
+		yaw += speed * yawSpeed * CL_KeyState(&in_left);
 	}
+    cl.viewangles[YAW] = yaw;
 
+    float pitch = cl.viewangles[PITCH];
+    float pitchSpeed = cl_speed_pitch->value;
 	if (in_klook.state & 1)
 	{
-		cl.viewangles[PITCH] -= speed * cl_pitchspeed->value * CL_KeyState(&in_forward);
-		cl.viewangles[PITCH] += speed * cl_pitchspeed->value * CL_KeyState(&in_back);
+		pitch -= speed * pitchSpeed * CL_KeyState(&in_forward);
+		pitch += speed * pitchSpeed * CL_KeyState(&in_back);
 	}
-
-	up = CL_KeyState(&in_lookup);
-	down = CL_KeyState(&in_lookdown);
-
-	cl.viewangles[PITCH] -= speed * cl_pitchspeed->value * up;
-	cl.viewangles[PITCH] += speed * cl_pitchspeed->value * down;
+	float up = CL_KeyState(&in_lookup);
+	float down = CL_KeyState(&in_lookdown);
+	pitch -= speed * pitchSpeed * up;
+	pitch += speed * pitchSpeed * down;   
+    cl.viewangles[PITCH] = pitch;
 }
 
 /*
@@ -439,20 +406,20 @@ void CL_BaseMove(usercmd_t *cmd)
 
 	if (in_strafe.state & 1)
 	{
-		cmd->sidemove += cl_sidespeed->value * CL_KeyState(&in_right);
-		cmd->sidemove -= cl_sidespeed->value * CL_KeyState(&in_left);
+		cmd->sidemove += cl_speed_side->value * CL_KeyState(&in_right);
+		cmd->sidemove -= cl_speed_side->value * CL_KeyState(&in_left);
 	}
 
-	cmd->sidemove += cl_sidespeed->value * CL_KeyState(&in_moveright);
-	cmd->sidemove -= cl_sidespeed->value * CL_KeyState(&in_moveleft);
+	cmd->sidemove += cl_speed_side->value * CL_KeyState(&in_moveright);
+	cmd->sidemove -= cl_speed_side->value * CL_KeyState(&in_moveleft);
 
-	cmd->upmove += cl_upspeed->value * CL_KeyState(&in_up);
-	cmd->upmove -= cl_upspeed->value * CL_KeyState(&in_down);
+	cmd->upmove += cl_speed_up->value * CL_KeyState(&in_up);
+	cmd->upmove -= cl_speed_up->value * CL_KeyState(&in_down);
 
 	if (!(in_klook.state & 1))
 	{
-		cmd->forwardmove += cl_forwardspeed->value * CL_KeyState(&in_forward);
-		cmd->forwardmove -= cl_forwardspeed->value * CL_KeyState(&in_back);
+		cmd->forwardmove += cl_speed_forward->value * CL_KeyState(&in_forward);
+		cmd->forwardmove -= cl_speed_forward->value * CL_KeyState(&in_back);
 	}
 
 	/* adjust for speed key / running */
@@ -466,34 +433,20 @@ void CL_BaseMove(usercmd_t *cmd)
 
 void CL_ClampPitch()
 {
-	float pitch;
+	float pitchDelta = SHORT2ANGLE(cl.frame.playerstate.pmove.delta_angles[PITCH]);
+	if (pitchDelta > 180)
+		pitchDelta -= 360;
 
-	pitch = SHORT2ANGLE(cl.frame.playerstate.pmove.delta_angles[PITCH]);
-
-	if (pitch > 180)
-	{
-		pitch -= 360;
-	}
-
-	if (cl.viewangles[PITCH] + pitch < -360)
-	{
-		cl.viewangles[PITCH] += 360; /* wrapped */
-	}
-
-	if (cl.viewangles[PITCH] + pitch > 360)
-	{
-		cl.viewangles[PITCH] -= 360; /* wrapped */
-	}
-
-	if (cl.viewangles[PITCH] + pitch > 89)
-	{
-		cl.viewangles[PITCH] = 89 - pitch;
-	}
-
-	if (cl.viewangles[PITCH] + pitch < -89)
-	{
-		cl.viewangles[PITCH] = -89 - pitch;
-	}
+    float pitch = cl.viewangles[PITCH];
+	if (pitch + pitchDelta < -360)
+		pitch += 360; /* wrapped */
+	if (pitch + pitchDelta > 360)
+		pitch -= 360; /* wrapped */
+	if (pitch + pitchDelta > 89)
+		pitch = 89 - pitchDelta;
+	if (pitch + pitchDelta < -89)
+		pitch = -89 - pitchDelta;
+    cl.viewangles[PITCH] = pitch;
 }
 
 void CL_FinishMove(usercmd_t *cmd)
@@ -545,21 +498,15 @@ void CL_FinishMove(usercmd_t *cmd)
 	cmd->lightlevel = (byte)cl_lightlevel->value;
 }
 
-usercmd_t CL_CreateCmd(void)
+usercmd_t CL_CreateCmd()
 {
 	usercmd_t cmd;
 
 	frame_msec = sys_frame_time - old_sys_frame_time;
-
 	if (frame_msec < 1)
-	{
 		frame_msec = 1;
-	}
-
 	if (frame_msec > 200)
-	{
 		frame_msec = 200;
-	}
 
 	/* get basic movement from keyboard */
 	CL_BaseMove(&cmd);
@@ -574,7 +521,7 @@ usercmd_t CL_CreateCmd(void)
 	return cmd;
 }
 
-void IN_CenterView(void)
+void IN_CenterView()
 {
 	cl.viewangles[PITCH] = -SHORT2ANGLE(cl.frame.playerstate.pmove.delta_angles[PITCH]);
 }
@@ -582,12 +529,12 @@ void IN_CenterView(void)
 /*
  * Centers the view
  */
-static void IN_ForceCenterView(void)
+static void IN_ForceCenterView()
 {
 	cl.viewangles[PITCH] = 0;
 }
 
-void CL_InitInput(void)
+void CL_InitInput()
 {
 	Cmd_AddCommand("centerview", IN_CenterView);
 	Cmd_AddCommand("force_centerview", IN_ForceCenterView);
@@ -625,11 +572,13 @@ void CL_InitInput(void)
 	Cmd_AddCommand("impulse", IN_Impulse);
 	Cmd_AddCommand("+klook", IN_KLookDown);
 	Cmd_AddCommand("-klook", IN_KLookUp);
+	Cmd_AddCommand("+mlook", IN_MLookDown);
+	Cmd_AddCommand("-mlook", IN_MLookUp);
 
 	cl_nodelta = Cvar_Get("cl_nodelta", "0", 0);
 }
 
-void CL_SendCmd(void)
+void CL_SendCmd()
 {
 	sizebuf_t buf;
 	byte data[128];

@@ -357,7 +357,7 @@ static const char *roguecredits[] =
 	0
 };
 
-static void M_Credits_MenuDraw()
+static void MenuCredits_draw()
 {
 	int i, y;
 	float scale = SCR_GetMenuScale();
@@ -374,9 +374,7 @@ static void M_Credits_MenuDraw()
 		int bold = false;
 
 		if (y <= -8)
-		{
 			continue;
-		}
 
 		if (credits[i][0] == '+')
 		{
@@ -391,41 +389,28 @@ static void M_Credits_MenuDraw()
 
 		for (j = 0; credits[i][j + stringoffset]; j++)
 		{
-			int x;
-
-			x = (viddef.width / scale - (int)Q_strlen(credits[i]) * 8 - stringoffset *
-			     8) / 2 + (j + stringoffset) * 8;
-
+			int x = (viddef.width / scale - (int)Q_strlen(credits[i]) * 8 - stringoffset * 8) / 2 + (j + stringoffset) * 8;
 			if (bold)
-			{
 				Draw_CharScaled(x * scale, y * scale, credits[i][j + stringoffset] + 128, scale);
-			}
 			else
-			{
 				Draw_CharScaled(x * scale, y * scale, credits[i][j + stringoffset], scale);
-			}
 		}
 	}
 
 	Draw_CharEnd();
 
 	if (y < 0)
-	{
 		credits_start_time = cls.realtime;
-	}
 }
 
-static const char* M_Credits_Key(int key)
+static const char* MenuCredits_key(int key, int keyUnmodified)
 {
 	switch (key)
 	{
 	case K_GAMEPAD_SELECT:
 	case K_ESCAPE:
 		if (creditsBuffer)
-		{
 			FS_FreeFile(creditsBuffer);
-		}
-
 		M_PopMenu();
 		break;
 	}
@@ -454,29 +439,20 @@ void MenuCredits_enter()
 			while (*p != '\r' && *p != '\n')
 			{
 				p++;
-
 				if (--count == 0)
-				{
 					break;
-				}
 			}
 
 			if (*p == '\r')
 			{
 				*p++ = 0;
-
 				if (--count == 0)
-				{
 					break;
-				}
 			}
 
 			*p++ = 0;
-
 			if (--count == 0)
-			{
 				break;
-			}
 		}
 
 		creditsIndex[++n] = 0;
@@ -487,20 +463,13 @@ void MenuCredits_enter()
 		isdeveloper = Developer_searchpath();
 
 		if (isdeveloper == 1) /* Xatrix - The Reckoning */
-		{
 			credits = xatcredits;
-		}
-		else
-		if (isdeveloper == 2) /* Rogue - Ground Zero */
-		{
+		else if (isdeveloper == 2) /* Rogue - Ground Zero */
 			credits = roguecredits;
-		}
 		else
-		{
 			credits = idcredits;
-		}
 	}
 
 	credits_start_time = cls.realtime;
-	M_PushMenu(M_Credits_MenuDraw, M_Credits_Key);
+	M_PushMenu(MenuCredits_draw, MenuCredits_key);
 }

@@ -1,4 +1,4 @@
-Thenesis Quake 2 for GCW-Zero v1.0
+Thenesis Quake 2 for GCW-Zero v1.1
 
 This version is based on Yamagi Quake 2 v5.34.
 
@@ -29,3 +29,12 @@ Quake2/xatrix/pak0.pak
 You can also use the demo version of Quake 2.
 In this case you have only one pak file:
 Quake2/baseq2/pak0.pak
+
+There is some hardwired cheat keys which are enabled when the power switch is on the lock position:
+- START: Enable cheats when creating a server.
+- LEFT: No target.
+- RIGHT: Give all weapons, ammos and items.
+- DOWN: Enable / disable no clipping mode.
+- UP: Enable / disable god mode.
+- LEFT TRIGGER: Enable / disable draw world.
+- RIGHT TRIGGER: Enable / disable light maps.

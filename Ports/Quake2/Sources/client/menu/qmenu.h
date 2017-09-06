@@ -29,7 +29,7 @@
 
 #include "client/client.h"
 
-#define MAXMENUITEMS 64
+#define MAXMENUITEMS 256
 
 #define MTYPE_SLIDER 0
 #define MTYPE_LIST 1

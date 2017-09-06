@@ -41,7 +41,7 @@ static void AddressBook_MenuInit()
 	}
 }
 
-static const char* AddressBook_MenuKey(int key)
+static const char* AddressBook_MenuKey(int key, int keyUnmodified)
 {
 	if (key == K_GAMEPAD_SELECT || key == K_ESCAPE)
 	{
@@ -55,7 +55,7 @@ static const char* AddressBook_MenuKey(int key)
 		}
 	}
 
-	return Default_MenuKey(&s_addressbook_menu, key);
+	return Default_MenuKey(&s_addressbook_menu, key, keyUnmodified);
 }
 
 static void AddressBook_MenuDraw()

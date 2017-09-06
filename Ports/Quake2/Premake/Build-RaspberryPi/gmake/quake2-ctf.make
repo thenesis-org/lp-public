@@ -20,8 +20,8 @@ ifndef RESCOMP
 endif
 
 ifeq ($(config),release)
-  OBJDIR     = ../../../Output/Targets/Generic/Release/obj/quake2-ctf
-  TARGETDIR  = ../../../Output/Targets/Generic/Release/bin/ctf
+  OBJDIR     = ../../../Output/Targets/RaspberryPi/Release/obj/quake2-ctf
+  TARGETDIR  = ../../../Output/Targets/RaspberryPi/Release/bin/ctf
   TARGET     = $(TARGETDIR)/game.so
   DEFINES   += -D__RASPBERRY_PI__ -DARCH=\"i386\" -DOSTYPE=\"Linux\" -DNOUNCRYPT -DZIP
   INCLUDES  += -I/opt/vc/include -I../../../../../Engine/External/include -I../../../Sources -I../../../Sources/ctf/src
@@ -29,7 +29,7 @@ ifeq ($(config),release)
   ALL_CFLAGS    += $(CFLAGS) $(ALL_CPPFLAGS) $(ARCH) -ffast-math -Wall -Wextra -O2 -fPIC -std=gnu99 -Wno-unused-function -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-switch -Wno-missing-field-initializers -fPIC -fvisibility=hidden
   ALL_CXXFLAGS  += $(CXXFLAGS) $(ALL_CFLAGS)
   ALL_RESFLAGS  += $(RESFLAGS) $(DEFINES) $(INCLUDES)
-  ALL_LDFLAGS   += $(LDFLAGS) -L../../../Output/Targets/Generic/Release/lib -s -shared
+  ALL_LDFLAGS   += $(LDFLAGS) -L../../../Output/Targets/RaspberryPi/Release/lib -s -shared
   LDDEPS    +=
   LIBS      += $(LDDEPS)
   LINKCMD    = $(CC) -o $(TARGET) $(OBJECTS) $(RESOURCES) $(ARCH) $(ALL_LDFLAGS) $(LIBS)
@@ -42,8 +42,8 @@ ifeq ($(config),release)
 endif
 
 ifeq ($(config),debug)
-  OBJDIR     = ../../../Output/Targets/Generic/Debug/obj/quake2-ctf
-  TARGETDIR  = ../../../Output/Targets/Generic/Debug/bin/ctf
+  OBJDIR     = ../../../Output/Targets/RaspberryPi/Debug/obj/quake2-ctf
+  TARGETDIR  = ../../../Output/Targets/RaspberryPi/Debug/bin/ctf
   TARGET     = $(TARGETDIR)/game.so
   DEFINES   += -D__RASPBERRY_PI__ -DARCH=\"i386\" -DOSTYPE=\"Linux\" -DNOUNCRYPT -DZIP
   INCLUDES  += -I/opt/vc/include -I../../../../../Engine/External/include -I../../../Sources -I../../../Sources/ctf/src
@@ -51,7 +51,7 @@ ifeq ($(config),debug)
   ALL_CFLAGS    += $(CFLAGS) $(ALL_CPPFLAGS) $(ARCH) -ffast-math -Wall -Wextra -g -fPIC -std=gnu99 -Wno-unused-function -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-switch -Wno-missing-field-initializers -fPIC -fvisibility=hidden
   ALL_CXXFLAGS  += $(CXXFLAGS) $(ALL_CFLAGS)
   ALL_RESFLAGS  += $(RESFLAGS) $(DEFINES) $(INCLUDES)
-  ALL_LDFLAGS   += $(LDFLAGS) -L../../../Output/Targets/Generic/Debug/lib -shared
+  ALL_LDFLAGS   += $(LDFLAGS) -L../../../Output/Targets/RaspberryPi/Debug/lib -shared
   LDDEPS    +=
   LIBS      += $(LDDEPS)
   LINKCMD    = $(CC) -o $(TARGET) $(OBJECTS) $(RESOURCES) $(ARCH) $(ALL_LDFLAGS) $(LIBS)

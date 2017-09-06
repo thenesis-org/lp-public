@@ -29,9 +29,8 @@ static playermodelinfo_s s_pmi[MAX_PLAYERMODELS];
 static char *s_pmnames[MAX_PLAYERMODELS];
 static int s_numplayermodels;
 
-static const int rate_tbl[] = { 2500, 3200, 5000, 10000, 25000, 0 };
-static const char *rate_names[] = { "28.8 Modem", "33.6 Modem", "Single ISDN",
-	                            "Dual ISDN/Cable", "T1/LAN", "User defined", 0 };
+static const int rate_tbl[] = { (1<<15)/8*2/3, (1<<17)/8*2/3, (1<<19)/8*2/3, (1<<21)/8*2/3, (1<<23)/8*2/3, 0 };
+static const char *rate_names[] = { "32 Kbps", "128 Kbps", "512 Kbps", "2 Mbps", "8 Mbps", "User defined", 0 };
 
 static void DownloadOptionsFunc(void *self)
 {
@@ -516,9 +515,7 @@ static void PlayerConfig_MenuDraw()
 
 		yaw += cls.frametime * 45.0f;
 		if (++yaw > 360)
-		{
 			yaw -= 360;
-		}
 
 		refdef.areabits = 0;
 		refdef.num_entities = 1;
@@ -543,10 +540,8 @@ static void PlayerConfig_MenuDraw()
 	Menu_Draw(&s_player_config_menu);
 }
 
-static const char* PlayerConfig_MenuKey(int key)
+static const char* PlayerConfig_MenuKey(int key, int keyUnmodified)
 {
-	int i;
-
 	if (key == K_GAMEPAD_SELECT || key == K_ESCAPE)
 	{
 		char scratch[1024];
@@ -560,11 +555,9 @@ static const char* PlayerConfig_MenuKey(int key)
 
 		Cvar_Set("skin", scratch);
 
-		for (i = 0; i < s_numplayermodels; i++)
+		for (int i = 0; i < s_numplayermodels; i++)
 		{
-			int j;
-
-			for (j = 0; j < s_pmi[i].nskins; j++)
+			for (int j = 0; j < s_pmi[i].nskins; j++)
 			{
 				if (s_pmi[i].skindisplaynames[j])
 				{
@@ -580,7 +573,7 @@ static const char* PlayerConfig_MenuKey(int key)
 		}
 	}
 
-	return Default_MenuKey(&s_player_config_menu, key);
+	return Default_MenuKey(&s_player_config_menu, key, keyUnmodified);
 }
 
 void MenuPlayerConfig_enter()

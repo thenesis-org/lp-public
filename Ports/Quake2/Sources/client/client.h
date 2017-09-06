@@ -43,6 +43,7 @@
 #include <math.h>
 #include <string.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -255,30 +256,38 @@ extern cvar_t *cl_predict;
 extern cvar_t *cl_footsteps;
 extern cvar_t *cl_noskins;
 extern cvar_t *cl_autoskins;
-extern cvar_t *cl_upspeed;
-extern cvar_t *cl_forwardspeed;
-extern cvar_t *cl_sidespeed;
-extern cvar_t *cl_yawspeed;
-extern cvar_t *cl_pitchspeed;
-extern cvar_t *cl_run;
 extern cvar_t *cl_anglespeedkey;
 extern cvar_t *cl_shownet;
 extern cvar_t *cl_showmiss;
 extern cvar_t *cl_showclamp;
-extern cvar_t *lookspring;
-extern cvar_t *lookstrafe;
-extern cvar_t *sensitivity;
 
-extern cvar_t *joystick_enabled;
+extern cvar_t *cl_speed_up;
+extern cvar_t *cl_speed_forward;
+extern cvar_t *cl_speed_side;
+extern cvar_t *cl_speed_yaw;
+extern cvar_t *cl_speed_pitch;
+extern cvar_t *cl_run;
+
+extern cvar_t *input_freelook;
+extern cvar_t *input_lookstrafe;
+extern cvar_t *input_lookspring;
+
+extern cvar_t *stick_enabled;
+extern cvar_t *stick_pitch_inverted;
 extern cvar_t *stick_sensitivity;
 extern cvar_t *stick_curve;
 extern cvar_t *stick_deadzone;
 
-extern cvar_t *m_pitch;
-extern cvar_t *m_yaw;
-extern cvar_t *m_forward;
-extern cvar_t *m_side;
-extern cvar_t *freelook;
+extern cvar_t *mouse_windowed;
+extern cvar_t *mouse_pitch_inverted;
+extern cvar_t *mouse_filter;
+extern cvar_t *mouse_exponential_sensitivity;
+extern cvar_t *mouse_linear_sensitivity;
+extern cvar_t *mouse_speed_forward;
+extern cvar_t *mouse_speed_side;
+extern cvar_t *mouse_speed_pitch;
+extern cvar_t *mouse_speed_yaw;
+
 extern cvar_t *cl_lightlevel;
 extern cvar_t *cl_paused;
 extern cvar_t *cl_timedemo;
@@ -318,7 +327,7 @@ void DrawAltString(int x, int y, char *s); /* toggle high bit */
 void DrawAltStringScaled(int x, int y, char *s, float factor);
 qboolean CL_CheckOrDownloadFile(char *filename);
 
-void CL_AddNetgraph(void);
+void CL_AddNetgraph();
 
 typedef struct cl_sustain
 {
@@ -340,7 +349,6 @@ void CL_ParticleSteamEffect2(cl_sustain_t *self);
 void CL_TeleporterParticles(entity_state_t *ent);
 void CL_ParticleEffect(vec3_t org, vec3_t dir, int color, int count);
 void CL_ParticleEffect2(vec3_t org, vec3_t dir, int color, int count);
-
 void CL_ParticleEffect3(vec3_t org, vec3_t dir, int color, int count);
 
 typedef struct particle_s
@@ -358,8 +366,8 @@ typedef struct particle_s
 	float alphavel;
 } cparticle_t;
 
-void CL_ClearEffects(void);
-void CL_ClearTEnts(void);
+void CL_ClearEffects();
+void CL_ClearTEnts();
 void CL_BlasterTrail(vec3_t start, vec3_t end);
 void CL_QuadTrail(vec3_t start, vec3_t end);
 void CL_RailTrail(vec3_t start, vec3_t end);
@@ -393,44 +401,43 @@ void CL_WidowSplash(vec3_t org);
 
 int CL_ParseEntityBits(unsigned *bits);
 void CL_ParseDelta(entity_state_t *from, entity_state_t *to, int number, int bits);
-void CL_ParseFrame(void);
+void CL_ParseFrame();
+void CL_ParseStatusMessage();
 
-void CL_ParseTEnt(void);
-void CL_ParseConfigString(void);
-void CL_AddMuzzleFlash(void);
-void CL_AddMuzzleFlash2(void);
+void CL_ParseTEnt();
+void CL_ParseConfigString();
+void CL_AddMuzzleFlash();
+void CL_AddMuzzleFlash2();
 void SmokeAndFlash(vec3_t origin);
 
 void CL_SetLightstyle(int i);
 
-void CL_RunParticles(void);
-void CL_RunDLights(void);
-void CL_RunLightStyles(void);
+void CL_RunParticles();
+void CL_RunDLights();
+void CL_RunLightStyles();
 
-void CL_CalcViewValues(void);
-void CL_AddEntities(void);
-void CL_AddDLights(void);
-void CL_AddTEnts(void);
-void CL_AddLightStyles(void);
+void CL_CalcViewValues();
+void CL_AddEntities();
+void CL_AddDLights();
+void CL_AddTEnts();
+void CL_AddLightStyles();
 
-void CL_PrepRefresh(void);
-void CL_RegisterSounds(void);
+void CL_PrepRefresh();
+void CL_RegisterSounds();
 
-void CL_Quit_f(void);
+void CL_Init();
+void CL_Pause(bool pauseFlag);
+void CL_Quit_f();
 
-void IN_Accumulate(void);
+void CL_ParseLayout();
 
-void CL_ParseLayout(void);
-
-void CL_Init(void);
-
-void CL_FixUpGender(void);
-void CL_Disconnect(void);
-void CL_Disconnect_f(void);
-void CL_GetChallengePacket(void);
-void CL_PingServers_f(void);
-void CL_Snd_Restart_f(void);
-void CL_RequestNextDownload(void);
+void CL_FixUpGender();
+void CL_Disconnect();
+void CL_Disconnect_f();
+void CL_GetChallengePacket();
+void CL_PingServers_f();
+void CL_Snd_Restart_f();
+void CL_RequestNextDownload();
 
 typedef struct
 {
@@ -444,53 +451,53 @@ extern kbutton_t in_mlook, in_klook;
 extern kbutton_t in_strafe;
 extern kbutton_t in_speed;
 
-void CL_InitInput(void);
-void CL_SendCmd(void);
+void CL_InitInput();
+void CL_SendCmd();
 void CL_SendMove(usercmd_t *cmd);
 
-void CL_ClearState(void);
+void CL_ClearState();
 
-void CL_ReadPackets(void);
+void CL_ReadPackets();
 
-int CL_ReadFromServer(void);
+int CL_ReadFromServer();
 void CL_WriteToServer(usercmd_t *cmd);
 void CL_BaseMove(usercmd_t *cmd);
 
-void IN_CenterView(void);
+void IN_CenterView();
 
 float CL_KeyState(kbutton_t *key);
 char* Key_KeynumToString(int keynum);
 
-void CL_WriteDemoMessage(void);
-void CL_Stop_f(void);
-void CL_Record_f(void);
+void CL_WriteDemoMessage();
+void CL_Stop_f();
+void CL_Record_f();
 
 extern char *svc_strings[256];
 
-void CL_ParseServerMessage(void);
+void CL_ParseServerMessage();
 void CL_LoadClientinfo(clientinfo_t *ci, char *s);
 void SHOWNET(char *s);
 void CL_ParseClientinfo(int player);
-void CL_Download_f(void);
+void CL_Download_f();
 
 extern int gun_frame;
 
 extern struct model_s *gun_model;
 
-void V_Init(void);
+void V_Init();
 void V_RenderView(float stereo_separation);
 void V_AddEntity(entity_t *ent);
 void V_AddParticle(vec3_t org, unsigned int color, float alpha);
 void V_AddLight(vec3_t org, float intensity, float r, float g, float b);
 void V_AddLightStyle(int style, float r, float g, float b);
 
-void CL_RegisterTEntSounds(void);
-void CL_RegisterTEntModels(void);
+void CL_RegisterTEntSounds();
+void CL_RegisterTEntModels();
 void CL_SmokeAndFlash(vec3_t origin);
 
-void CL_InitPrediction(void);
-void CL_PredictMove(void);
-void CL_CheckPredictionError(void);
+void CL_InitPrediction();
+void CL_PredictMove();
+void CL_CheckPredictionError();
 
 cdlight_t* CL_AllocDlight(int key);
 void CL_BigTeleportParticles(vec3_t org);
@@ -498,22 +505,22 @@ void CL_RocketTrail(vec3_t start, vec3_t end, centity_t *old);
 void CL_DiminishingTrail(vec3_t start, vec3_t end, centity_t *old, int flags);
 void CL_FlyEffect(centity_t *ent, vec3_t origin);
 void CL_BfgParticles(entity_t *ent);
-void CL_AddParticles(void);
+void CL_AddParticles();
 void CL_EntityEvent(entity_state_t *ent);
 void CL_TrapParticles(entity_t *ent);
 
-void M_Init(void);
-void M_Keydown(int key);
-void M_Draw(void);
-void MenuMain_enter(void);
-void M_ForceMenuOff(void);
+void M_Init();
+void M_Keydown(int key, int keyUnmodified);
+void M_Draw();
+void MenuMain_enter();
+void M_ForceMenuOff();
 void M_AddToServerList(netadr_t adr, char *info);
 
-void CL_ParseInventory(void);
+void CL_ParseInventory();
 void CL_KeyInventory(int key);
-void CL_DrawInventory(void);
+void CL_DrawInventory();
 
-void CL_PredictMovement(void);
+void CL_PredictMovement();
 trace_t CL_PMTrace(vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end);
 
 #endif

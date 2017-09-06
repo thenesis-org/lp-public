@@ -33,7 +33,7 @@ static menuslider_s MenuOptions_forwardSpeed_slider;
 static void MenuOptions_forwardSpeed_apply()
 {
 	menuslider_s *slider = &MenuOptions_forwardSpeed_slider;
-	Cvar_SetValue("cl_forwardspeed", slider->curvalue * 10.0f);
+	Cvar_SetValue("cl_speed_forward", slider->curvalue * 10.0f);
 }
 
 static void MenuOptions_forwardSpeed_callback(void *unused)
@@ -51,7 +51,7 @@ static int MenuOptions_forwardSpeed_init(int y)
 	slider->generic.callback = MenuOptions_forwardSpeed_callback;
 	slider->minvalue = 10;
 	slider->maxvalue = 30;
-	slider->curvalue = cl_forwardspeed->value / 10;
+	slider->curvalue = cl_speed_forward->value / 10;
 	slider->savedValue = slider->curvalue;
 	Menu_AddItem(&MenuOptions_menu, (void *)slider);
 	y += 10;
@@ -66,7 +66,7 @@ static menuslider_s MenuOptions_sideSpeed_slider;
 static void MenuOptions_sideSpeed_apply()
 {
 	menuslider_s *slider = &MenuOptions_sideSpeed_slider;
-	Cvar_SetValue("cl_sidespeed", slider->curvalue * 10.0f);
+	Cvar_SetValue("cl_speed_side", slider->curvalue * 10.0f);
 }
 
 static void MenuOptions_sideSpeed_callback(void *unused)
@@ -84,7 +84,7 @@ static int MenuOptions_sideSpeed_init(int y)
 	slider->generic.callback = MenuOptions_sideSpeed_callback;
 	slider->minvalue = 10;
 	slider->maxvalue = 30;
-	slider->curvalue = cl_sidespeed->value / 10;
+	slider->curvalue = cl_speed_side->value / 10;
 	slider->savedValue = slider->curvalue;
 	Menu_AddItem(&MenuOptions_menu, (void *)slider);
 	y += 10;
@@ -99,7 +99,7 @@ static menuslider_s MenuOptions_yawSpeed_slider;
 static void MenuOptions_yawSpeed_apply()
 {
 	menuslider_s *slider = &MenuOptions_yawSpeed_slider;
-	Cvar_SetValue("cl_yawspeed", slider->curvalue * 10.0f);
+	Cvar_SetValue("cl_speed_yaw", slider->curvalue * 10.0f);
 }
 
 static void MenuOptions_yawSpeed_callback(void *unused)
@@ -117,7 +117,7 @@ static int MenuOptions_yawSpeed_init(int y)
 	slider->generic.callback = MenuOptions_yawSpeed_callback;
 	slider->minvalue = 10;
 	slider->maxvalue = 30;
-	slider->curvalue = cl_yawspeed->value / 10;
+	slider->curvalue = cl_speed_yaw->value / 10;
 	slider->savedValue = slider->curvalue;
 	Menu_AddItem(&MenuOptions_menu, (void *)slider);
 	y += 10;
@@ -132,7 +132,7 @@ static menuslider_s MenuOptions_pitchSpeed_slider;
 static void MenuOptions_pitchSpeed_apply()
 {
 	menuslider_s *slider = &MenuOptions_pitchSpeed_slider;
-	Cvar_SetValue("cl_pitchspeed", slider->curvalue * 10.0f);
+	Cvar_SetValue("cl_speed_pitch", slider->curvalue * 10.0f);
 }
 
 static void MenuOptions_pitchSpeed_callback(void *unused)
@@ -150,7 +150,7 @@ static int MenuOptions_pitchSpeed_init(int y)
 	slider->generic.callback = MenuOptions_pitchSpeed_callback;
 	slider->minvalue = 10;
 	slider->maxvalue = 30;
-	slider->curvalue = cl_pitchspeed->value / 10;
+	slider->curvalue = cl_speed_pitch->value / 10;
 	slider->savedValue = slider->curvalue;
 	Menu_AddItem(&MenuOptions_menu, (void *)slider);
 	y += 10;
@@ -165,7 +165,7 @@ static menulist_s MenuOptions_freeLook_list;
 static void MenuOptions_freeLook_apply()
 {
 	menulist_s *list = &MenuOptions_freeLook_list;
-	Cvar_SetValue("freelook", (float)list->curvalue);
+	Cvar_SetValue("input_freelook", (float)list->curvalue);
 }
 
 static void MenuOptions_freeLook_callback(void *unused)
@@ -189,7 +189,7 @@ static int MenuOptions_freeLook_init(int y)
 	list->generic.name = "free look";
 	list->generic.callback = MenuOptions_freeLook_callback;
 	list->itemnames = itemNames;
-	list->curvalue = (freelook->value != 0);
+	list->curvalue = (input_freelook->value != 0);
 	list->savedValue = list->curvalue;
 	Menu_AddItem(&MenuOptions_menu, (void *)list);
 	y += 10;
@@ -204,7 +204,7 @@ static menulist_s MenuOptions_lookSpring_list;
 static void MenuOptions_lookSpring_apply()
 {
 	menulist_s *list = &MenuOptions_lookSpring_list;
-	Cvar_SetValue("lookspring", (float)list->curvalue);
+	Cvar_SetValue("input_lookspring", (float)list->curvalue);
 }
 
 static void MenuOptions_lookSpring_callback(void *unused)
@@ -228,7 +228,7 @@ static int MenuOptions_lookSpring_init(int y)
 	list->generic.name = "lookspring";
 	list->generic.callback = MenuOptions_lookSpring_callback;
 	list->itemnames = itemNames;
-	list->curvalue = (lookspring->value != 0);
+	list->curvalue = (input_lookspring->value != 0);
 	list->savedValue = list->curvalue;
 	Menu_AddItem(&MenuOptions_menu, (void *)list);
 	y += 10;
@@ -243,7 +243,7 @@ static menulist_s MenuOptions_lookStrafe_list;
 static void MenuOptions_lookStrafe_apply()
 {
 	menulist_s *list = &MenuOptions_lookStrafe_list;
-	Cvar_SetValue("lookstrafe", (float)list->curvalue);
+	Cvar_SetValue("input_lookstrafe", (float)list->curvalue);
 }
 
 static void MenuOptions_lookStrafe_callback(void *unused)
@@ -267,7 +267,7 @@ static int MenuOptions_lookStrafe_init(int y)
 	list->generic.name = "lookstrafe";
 	list->generic.callback = MenuOptions_lookStrafe_callback;
 	list->itemnames = itemNames;
-	list->curvalue = (lookstrafe->value != 0);
+	list->curvalue = (input_lookstrafe->value != 0);
 	list->savedValue = list->curvalue;
 	Menu_AddItem(&MenuOptions_menu, (void *)list);
 	y += 10;
@@ -432,11 +432,7 @@ static void MenuOptions_console_callback(void *unused)
 	M_ForceMenuOff();
 	cls.key_dest = key_console;
 
-	if ((Cvar_VariableValue("maxclients") == 1) &&
-	    Com_ServerState())
-	{
-		Cvar_Set("paused", "1");
-	}
+    CL_Pause(true);
 }
 
 static int MenuOptions_console_init(int y)
@@ -499,14 +495,14 @@ static void MenuOptions_draw()
 	M_Popup();
 }
 
-static const char* MenuOptions_key(int key)
+static const char* MenuOptions_key(int key, int keyUnmodified)
 {
 	if (m_popup_string)
 	{
 		m_popup_string = NULL;
 		return NULL;
 	}
-	return Default_MenuKey(&MenuOptions_menu, key);
+	return Default_MenuKey(&MenuOptions_menu, key, keyUnmodified);
 }
 
 void MenuOptions_enter()

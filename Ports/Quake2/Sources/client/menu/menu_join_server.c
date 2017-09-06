@@ -174,14 +174,14 @@ static void JoinServer_MenuDraw()
 	M_Popup();
 }
 
-static const char* JoinServer_MenuKey(int key)
+static const char* JoinServer_MenuKey(int key, int keyUnmodified)
 {
 	if (m_popup_string)
 	{
 		m_popup_string = NULL;
 		return NULL;
 	}
-	return Default_MenuKey(&s_joinserver_menu, key);
+	return Default_MenuKey(&s_joinserver_menu, key, keyUnmodified);
 }
 
 void MenuJoinServer_enter()

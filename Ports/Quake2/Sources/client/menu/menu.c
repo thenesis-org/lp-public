@@ -57,8 +57,8 @@ static MenuKeyFunc m_keyfunc;
 
 typedef struct
 {
-	void (*draw)(void);
-	const char *(*key)(int k);
+    MenuDrawFunc draw;
+    MenuKeyFunc key;
 } menulayer_t;
 
 static menulayer_t m_layers[MAX_MENU_DEPTH];
@@ -80,7 +80,7 @@ void M_ForceMenuOff()
 	cls.key_dest = key_game;
 	m_menudepth = 0;
 	Key_MarkAllUp();
-	Cvar_Set("paused", "0");
+    CL_Pause(false);
 }
 
 void M_PopMenu()
@@ -88,9 +88,7 @@ void M_PopMenu()
 	S_StartLocalSound(menu_out_sound);
 
 	if (m_menudepth < 1)
-	{
 		Com_Error(ERR_FATAL, "M_PopMenu: depth < 1");
-	}
 
 	m_menudepth--;
 
@@ -98,9 +96,7 @@ void M_PopMenu()
 	m_keyfunc = m_layers[m_menudepth].key;
 
 	if (!m_menudepth)
-	{
 		M_ForceMenuOff();
-	}
 }
 
 /*
@@ -123,14 +119,7 @@ void M_PopMenu()
  */
 void M_PushMenu(MenuDrawFunc draw, MenuKeyFunc key)
 {
-	int i;
-	int alreadyPresent = 0;
-
-	if ((Cvar_VariableValue("maxclients") == 1) &&
-	    Com_ServerState())
-	{
-		Cvar_Set("paused", "1");
-	}
+    CL_Pause(true);
 
 	/* if this menu is already open (and on top),
 	   close it => toggling behaviour */
@@ -142,10 +131,11 @@ void M_PushMenu(MenuDrawFunc draw, MenuKeyFunc key)
 
 	/* if this menu is already present, drop back to
 	   that level to avoid stacking menus by hotkeys */
+	int alreadyPresent = 0;
+    int i;
 	for (i = 0; i < m_menudepth; i++)
 	{
-		if ((m_layers[i].draw == draw) &&
-		    (m_layers[i].key == key))
+		if (m_layers[i].draw == draw && m_layers[i].key == key)
 		{
 			alreadyPresent = 1;
 			break;
@@ -154,9 +144,7 @@ void M_PushMenu(MenuDrawFunc draw, MenuKeyFunc key)
 
 	/* menu was already opened further down the stack */
 	while (alreadyPresent && i <= m_menudepth)
-	{
 		M_PopMenu(); /* decrements m_menudepth */
-	}
 
 	if (m_menudepth >= MAX_MENU_DEPTH)
 	{
@@ -176,7 +164,7 @@ void M_PushMenu(MenuDrawFunc draw, MenuKeyFunc key)
 	cls.key_dest = key_menu;
 }
 
-const char* Default_MenuKey(menuframework_s *m, int key)
+const char* Default_MenuKey(menuframework_s *m, int key, int keyUnmodified)
 {
 	if (m)
 	{
@@ -186,9 +174,7 @@ const char* Default_MenuKey(menuframework_s *m, int key)
 			if (item->type == MTYPE_FIELD)
 			{
 				if (Field_Key((menufield_s *)item, key))
-				{
 					return NULL;
-				}
 			}
 		}
 	}
@@ -282,9 +268,7 @@ const char* Default_MenuKey(menuframework_s *m, int key)
 	case K_KP_ENTER:
 	case K_ENTER:
 		if (m)
-		{
 			Menu_SelectItem(m);
-		}
 
 		sound = menu_move_sound;
 		break;
@@ -433,9 +417,7 @@ void M_Popup()
 	char *str;
 
 	if (!m_popup_string)
-	{
 		return;
-	}
 
 	if (m_popup_endtime && m_popup_endtime < cls.realtime)
 	{
@@ -455,15 +437,11 @@ void M_Popup()
 		{
 			n++;
 			if (n > width)
-			{
 				width = n;
-			}
 		}
 	}
 	if (n)
-	{
 		lines++;
-	}
 
 	if (width)
 	{
@@ -477,7 +455,7 @@ void M_Popup()
 	}
 }
 
-void M_Init(void)
+void M_Init()
 {
 	Cmd_AddCommand("menu_main", MenuMain_enter);
 	Cmd_AddCommand("menu_game", MenuGame_enter);
@@ -500,22 +478,16 @@ void M_Init(void)
 void M_Draw()
 {
 	if (cls.key_dest != key_menu)
-	{
 		return;
-	}
 
 	/* repaint everything next frame */
 	SCR_DirtyScreen();
 
 	/* dim everything behind it down */
 	if (cl.cinematictime > 0)
-	{
 		Draw_Fill(0, 0, viddef.width, viddef.height, 0);
-	}
 	else
-	{
 		Draw_FadeScreen();
-	}
 
 	m_drawfunc();
 
@@ -529,14 +501,12 @@ void M_Draw()
 	}
 }
 
-void M_Keydown(int key)
+void M_Keydown(int key, int keyUnmodified)
 {
 	if (m_keyfunc)
 	{
-		const char *s = m_keyfunc(key);
+		const char *s = m_keyfunc(key, keyUnmodified);
 		if (s != 0)
-		{
 			S_StartLocalSound((char *)s);
-		}
 	}
 }

@@ -68,13 +68,13 @@ void DrawAltStringScaled(int x, int y, char *s, float factor)
 	Draw_CharEnd();
 }
 
-void Key_ClearTyping(void)
+void Key_ClearTyping()
 {
 	key_lines[edit_line][1] = 0; /* clear any typing */
 	key_linepos = 1;
 }
 
-void Con_ToggleConsole_f(void)
+void Con_ToggleConsole_f()
 {
 	SCR_EndLoadingPlaque(); /* get rid of loading plaque */
 
@@ -97,22 +97,17 @@ void Con_ToggleConsole_f(void)
 	if (cls.key_dest == key_console)
 	{
 		M_ForceMenuOff();
-		Cvar_Set("paused", "0");
+        CL_Pause(false);
 	}
 	else
 	{
 		M_ForceMenuOff();
 		cls.key_dest = key_console;
-
-		if ((Cvar_VariableValue("maxclients") == 1) &&
-		    Com_ServerState())
-		{
-			Cvar_Set("paused", "1");
-		}
+        CL_Pause(true);
 	}
 }
 
-void Con_ToggleChat_f(void)
+void Con_ToggleChat_f()
 {
 	Key_ClearTyping();
 
@@ -125,14 +120,12 @@ void Con_ToggleChat_f(void)
 		}
 	}
 	else
-	{
 		cls.key_dest = key_console;
-	}
 
 	Con_ClearNotify();
 }
 
-void Con_Clear_f(void)
+void Con_Clear_f()
 {
 	memset(con.text, ' ', CON_TEXTSIZE);
 }
@@ -176,19 +169,13 @@ void Con_Dump_f()
 	for (l = con.current - con.totallines + 1; l <= con.current; l++)
 	{
 		line = con.text + (l % con.totallines) * con.linewidth;
-
 		for (x = 0; x < con.linewidth; x++)
 		{
 			if (line[x] != ' ')
-			{
 				break;
-			}
 		}
-
 		if (x != con.linewidth)
-		{
 			break;
-		}
 	}
 
 	/* write the remaining lines */
@@ -202,19 +189,13 @@ void Con_Dump_f()
 		for (x = con.linewidth - 1; x >= 0; x--)
 		{
 			if (buffer[x] == ' ')
-			{
 				buffer[x] = 0;
-			}
 			else
-			{
 				break;
-			}
 		}
 
 		for (x = 0; buffer[x]; x++)
-		{
 			buffer[x] &= 0x7f;
-		}
 
 		fprintf(f, "%s\n", buffer);
 	}
@@ -222,23 +203,19 @@ void Con_Dump_f()
 	fclose(f);
 }
 
-void Con_ClearNotify(void)
+void Con_ClearNotify()
 {
-	int i;
-
-	for (i = 0; i < NUM_CON_TIMES; i++)
-	{
+	for (int i = 0; i < NUM_CON_TIMES; i++)
 		con.times[i] = 0;
-	}
 }
 
-void Con_MessageMode_f(void)
+void Con_MessageMode_f()
 {
 	chat_team = false;
 	cls.key_dest = key_message;
 }
 
-void Con_MessageMode2_f(void)
+void Con_MessageMode2_f()
 {
 	chat_team = true;
 	cls.key_dest = key_message;
@@ -247,7 +224,7 @@ void Con_MessageMode2_f(void)
 /*
  * If the line width has changed, reformat the buffer.
  */
-void Con_CheckResize(void)
+void Con_CheckResize()
 {
 	int i, j, width, oldwidth, oldtotallines, numlines, numchars;
 	char tbuf[CON_TEXTSIZE];
@@ -256,9 +233,7 @@ void Con_CheckResize(void)
 	width = ((int)(viddef.width / scale) >> 3) - 2;
 
 	if (width == con.linewidth)
-	{
 		return;
-	}
 
 	/* video hasn't been initialized yet */
 	if (width < 1)
@@ -277,16 +252,12 @@ void Con_CheckResize(void)
 		numlines = oldtotallines;
 
 		if (con.totallines < numlines)
-		{
 			numlines = con.totallines;
-		}
 
 		numchars = oldwidth;
 
 		if (con.linewidth < numchars)
-		{
 			numchars = con.linewidth;
-		}
 
 		memcpy(tbuf, con.text, CON_TEXTSIZE);
 		memset(con.text, ' ', CON_TEXTSIZE);
@@ -308,7 +279,7 @@ void Con_CheckResize(void)
 	con.display = con.current;
 }
 
-void Con_Init(void)
+void Con_Init()
 {
 	con.linewidth = -1;
 
@@ -328,18 +299,15 @@ void Con_Init(void)
 	con.initialized = true;
 }
 
-void Con_Linefeed(void)
+void Con_Linefeed()
 {
 	con.x = 0;
 
 	if (con.display == con.current)
-	{
 		con.display++;
-	}
 
 	con.current++;
-	memset(&con.text[(con.current % con.totallines) * con.linewidth],
-		' ', con.linewidth);
+	memset(&con.text[(con.current % con.totallines) * con.linewidth], ' ', con.linewidth);
 }
 
 /*
@@ -355,9 +323,7 @@ void Con_Print(char *txt)
 	int mask;
 
 	if (!con.initialized)
-	{
 		return;
-	}
 
 	if ((txt[0] == 1) || (txt[0] == 2))
 	{
@@ -375,9 +341,7 @@ void Con_Print(char *txt)
 		for (l = 0; l < con.linewidth; l++)
 		{
 			if (txt[l] <= ' ')
-			{
 				break;
-			}
 		}
 
 		/* word wrap */
@@ -400,9 +364,7 @@ void Con_Print(char *txt)
 
 			/* mark time for transparent overlay */
 			if (con.current >= 0)
-			{
 				con.times[con.current % NUM_CON_TIMES] = cls.realtime;
-			}
 		}
 
 		switch (c)
@@ -422,9 +384,7 @@ void Con_Print(char *txt)
 			con.x++;
 
 			if (con.x >= con.linewidth)
-			{
 				con.x = 0;
-			}
 
 			break;
 		}
@@ -440,13 +400,9 @@ void Con_CenteredPrint(char *text)
 	l = (con.linewidth - l) / 2;
 
 	if (l <= 0)
-	{
 		l = 0;
-	}
 	else
-	{
 		memset(buffer, ' ', l);
-	}
 
 	strcpy(buffer + l, text);
 	strcat(buffer, "\n");
@@ -457,22 +413,18 @@ void Con_CenteredPrint(char *text)
  * The input line scrolls horizontally if
  * typing goes beyond the right edge
  */
-void Con_DrawInput(void)
+void Con_DrawInput()
 {
 	int i;
 	float scale;
 	char *text;
 
 	if (cls.key_dest == key_menu)
-	{
 		return;
-	}
 
 	/* don't draw anything (always draw if not active) */
 	if ((cls.key_dest != key_console) && (cls.state == ca_active))
-	{
 		return;
-	}
 
 	scale = SCR_GetConsoleScale();
 	text = key_lines[edit_line];
@@ -482,21 +434,15 @@ void Con_DrawInput(void)
 
 	/* fill out remainder with spaces */
 	for (i = key_linepos + 1; i < con.linewidth; i++)
-	{
 		text[i] = ' ';
-	}
 
 	/* prestep if horizontally scrolling */
 	if (key_linepos >= con.linewidth)
-	{
 		text += 1 + key_linepos - con.linewidth;
-	}
 
 	Draw_CharBegin();
 	for (i = 0; i < con.linewidth; i++)
-	{
 		Draw_CharScaled(((i + 1) << 3) * scale, con.vislines - 22 * scale, text[i], scale);
-	}
 	Draw_CharEnd();
 
 	/* remove cursor */
@@ -506,7 +452,7 @@ void Con_DrawInput(void)
 /*
  * Draws the last few lines of output transparently over the game top
  */
-void Con_DrawNotify(void)
+void Con_DrawNotify()
 {
 	int x, v;
 	char *text;
@@ -524,30 +470,22 @@ void Con_DrawNotify(void)
 	for (i = con.current - NUM_CON_TIMES + 1; i <= con.current; i++)
 	{
 		if (i < 0)
-		{
 			continue;
-		}
 
 		time = con.times[i % NUM_CON_TIMES];
 
 		if (time == 0)
-		{
 			continue;
-		}
 
 		time = cls.realtime - time;
 
 		if (time > con_notifytime->value * 1000)
-		{
 			continue;
-		}
 
 		text = con.text + (i % con.totallines) * con.linewidth;
 
 		for (x = 0; x < con.linewidth; x++)
-		{
 			Draw_CharScaled(((x + 1) << 3) * scale, v * scale, text[x], scale);
-		}
 
 		v += 8;
 	}
@@ -568,9 +506,7 @@ void Con_DrawNotify(void)
 		s = chat_buffer;
 
 		if (chat_bufferlen > (viddef.width >> 3) - (skip + 1))
-		{
 			s += chat_bufferlen - ((viddef.width >> 3) - (skip + 1));
-		}
 
 		x = 0;
 
@@ -617,14 +553,10 @@ void Con_DrawConsole(float frac)
 	lines = viddef.height * frac;
 
 	if (lines <= 0)
-	{
 		return;
-	}
 
 	if (lines > viddef.height)
-	{
 		lines = viddef.height;
-	}
 
 	/* draw the background */
 	Draw_StretchPic(0, -viddef.height + lines, viddef.width,
@@ -639,9 +571,7 @@ void Con_DrawConsole(float frac)
 	Draw_CharBegin();
 
 	for (x = 0; x < verLen; x++)
-	{
 		Draw_CharScaled(viddef.width - ((verLen * 8 + 5) * scale) + x * 8 * scale, lines - 35 * scale, 128 + version[x], scale);
-	}
 
 	t = time(NULL);
 	today = localtime(&t);
@@ -650,9 +580,7 @@ void Con_DrawConsole(float frac)
 	Com_sprintf(tmpbuf, sizeof(tmpbuf), "%s", timebuf);
 
 	for (x = 0; x < 21; x++)
-	{
 		Draw_CharScaled(viddef.width - (173 * scale) + x * 8 * scale, lines - 25 * scale, 128 + tmpbuf[x], scale);
-	}
 
 	/* draw the text */
 	con.vislines = lines;
@@ -665,10 +593,7 @@ void Con_DrawConsole(float frac)
 	{
 		/* draw arrows to show the buffer is backscrolled */
 		for (x = 0; x < con.linewidth; x += 4)
-		{
 			Draw_CharScaled(((x + 1) << 3) * scale, y * scale, '^', scale);
-		}
-
 		y -= 8;
 		rows--;
 	}
@@ -678,34 +603,23 @@ void Con_DrawConsole(float frac)
 	for (i = 0; i < rows; i++, y -= 8, row--)
 	{
 		if (row < 0)
-		{
 			break;
-		}
-
 		if (con.current - row >= con.totallines)
-		{
 			break; /* past scrollback wrap point */
-		}
 
 		text = con.text + (row % con.totallines) * con.linewidth;
 
 		for (x = 0; x < con.linewidth; x++)
-		{
 			Draw_CharScaled(((x + 1) << 3) * scale, y * scale, text[x], scale);
-		}
 	}
 
 	/* draw the download bar, figure out width */
 	if (cls.download)
 	{
 		if ((text = strrchr(cls.downloadname, '/')) != NULL)
-		{
 			text++;
-		}
 		else
-		{
 			text = cls.downloadname;
-		}
 
 		x = con.linewidth - ((con.linewidth * 7) / 40);
 		y = x - Q_strlen(text) - 8;
@@ -729,24 +643,16 @@ void Con_DrawConsole(float frac)
 
 		/* where's the dot gone? */
 		if (cls.downloadpercent == 0)
-		{
 			n = 0;
-		}
 		else
-		{
 			n = y * cls.downloadpercent / 100;
-		}
 
 		for (j = 0; j < y; j++)
 		{
 			if (j == n)
-			{
 				dlbar[i++] = '\x83';
-			}
 			else
-			{
 				dlbar[i++] = '\x81';
-			}
 		}
 
 		dlbar[i++] = '\x82';
@@ -758,9 +664,7 @@ void Con_DrawConsole(float frac)
 		y = con.vislines - 12;
 
 		for (i = 0; i < Q_strlen(dlbar); i++)
-		{
 			Draw_CharScaled(((i + 1) << 3) * scale, y * scale, dlbar[i], scale);
-		}
 	}
 
 	Draw_CharEnd();

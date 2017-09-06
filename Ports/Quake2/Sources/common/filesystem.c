@@ -145,7 +145,7 @@ char* Sys_GetCurrentDirectory();
  * all generated files (savegames, screenshots, demos, config files) will be
  * saved to.  This can be overridden with the "-game" command line parameter.
  * The game directory can never be changed while quake is executing.  This is
- * a precacution against having a malicious server instruct clients to write
+ * a precaution against having a malicious server instruct clients to write
  * files over areas they shouldn't.
  *
  */
@@ -1089,31 +1089,6 @@ void FS_Path_f()
 	#else
 	Com_Printf("%i files in PAK/PK2 files.\n", totalFiles);
 	#endif
-}
-
-void FS_ExecAutoexec()
-{
-	char name[MAX_OSPATH];
-
-	char *dir = (char *)Cvar_VariableString("gamedir");
-
-	if (dir[0] != '\0')
-	{
-		Com_sprintf(name, sizeof(name), "%s/%s/autoexec.cfg",
-			fs_basedir->string, dir);
-	}
-	else
-	{
-		Com_sprintf(name, sizeof(name), "%s/%s/autoexec.cfg",
-			fs_basedir->string, BASEDIRNAME);
-	}
-
-	if (Sys_FindFirst(name, 0, SFF_SUBDIR | SFF_HIDDEN | SFF_SYSTEM) != NULL)
-	{
-		Cbuf_AddText("exec autoexec.cfg\n");
-	}
-
-	Sys_FindClose();
 }
 
 /*

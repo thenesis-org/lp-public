@@ -27,8 +27,8 @@
 
 #include "local.h"
 
-int scrap_allocated[MAX_SCRAPS][BLOCK_WIDTH];
-byte scrap_texels[MAX_SCRAPS][BLOCK_WIDTH * BLOCK_HEIGHT];
+int scrap_allocated[SCRAP_MAX_NB][SCRAP_WIDTH];
+byte scrap_texels[SCRAP_MAX_NB][SCRAP_WIDTH * SCRAP_HEIGHT];
 qboolean scrap_dirty;
 int scrap_uploads;
 
@@ -41,11 +41,11 @@ int Scrap_AllocBlock(int w, int h, int *x, int *y)
 	int best, best2;
 	int texnum;
 
-	for (texnum = 0; texnum < MAX_SCRAPS; texnum++)
+	for (texnum = 0; texnum < SCRAP_MAX_NB; texnum++)
 	{
-		best = BLOCK_HEIGHT;
+		best = SCRAP_HEIGHT;
 
-		for (i = 0; i < BLOCK_WIDTH - w; i++)
+		for (i = 0; i < SCRAP_WIDTH - w; i++)
 		{
 			best2 = 0;
 
@@ -69,7 +69,7 @@ int Scrap_AllocBlock(int w, int h, int *x, int *y)
 			}
 		}
 
-		if (best + h > BLOCK_HEIGHT)
+		if (best + h > SCRAP_HEIGHT)
 		{
 			continue;
 		}
@@ -85,11 +85,11 @@ int Scrap_AllocBlock(int w, int h, int *x, int *y)
 	return -1;
 }
 
-void Scrap_Upload(void)
+void Scrap_Upload()
 {
 	scrap_uploads++;
 	oglwSetCurrentTextureUnitForced(0);
 	oglwBindTextureForced(0, TEXNUM_SCRAPS);
-	R_Upload8(scrap_texels[0], BLOCK_WIDTH, BLOCK_HEIGHT, false, false);
+	R_Upload8(scrap_texels[0], SCRAP_WIDTH, SCRAP_HEIGHT, false, false);
 	scrap_dirty = false;
 }

@@ -134,7 +134,7 @@ cvar_t *gl_particle_size;
 cvar_t *gl_particle_att_a;
 cvar_t *gl_particle_att_b;
 cvar_t *gl_particle_att_c;
-#if defined(GLES1)
+#if defined(EGLW_GLES1)
 cvar_t *gl_particle_point;
 cvar_t *gl_particle_sprite;
 #endif
@@ -306,7 +306,7 @@ static void R_Register()
 	gl_particle_att_a = Cvar_Get("gl_particle_att_a", "0.01", CVAR_ARCHIVE);
 	gl_particle_att_b = Cvar_Get("gl_particle_att_b", "0.0", CVAR_ARCHIVE);
 	gl_particle_att_c = Cvar_Get("gl_particle_att_c", "0.01", CVAR_ARCHIVE);
-	#if defined(GLES1)
+	#if defined(EGLW_GLES1)
     // Points and point sprites are disabled by default because they are not well supported by most GLES 1 implementations.
 	gl_particle_point = Cvar_Get("gl_particle_point", "0", CVAR_ARCHIVE);
 	gl_particle_sprite = Cvar_Get("gl_particle_sprite", "0", CVAR_ARCHIVE);
@@ -368,7 +368,7 @@ static void R_SetDefaultState()
 
 	oglwSetTextureBlending(0, GL_REPLACE);
 
-	#if defined(GLES1)
+	#if defined(EGLW_GLES1)
 	{
 		float attenuations[3];
 
@@ -389,7 +389,7 @@ static void R_SetDefaultState()
 	}
 	#endif
 
-	#if defined(GLES1)
+	#if defined(EGLW_GLES1)
 	if (gl_msaa_samples->value)
 		glEnable(GL_MULTISAMPLE);
 	else
@@ -398,11 +398,8 @@ static void R_SetDefaultState()
 
 	oglwEnableBlending(false);
 	oglwSetBlendingFunction(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	oglwEnableAlphaTest(true);
-
+	oglwEnableAlphaTest(false);
 	oglwEnableDepthTest(false);
-
 	oglwEnableStencilTest(false);
 
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -446,36 +443,11 @@ void R_SetPalette(const unsigned char *palette)
 
 extern void Renderer_Gamma_Update();
 
-void R_BeginFrame(float camera_separation, int eyeFrame)
+static void R_Setup2DViewport()
 {
-	gl_state.camera_separation = camera_separation;
-
-	/* change modes if necessary */
-	if (gl_mode->modified)
-	{
-		vid_fullscreen->modified = true;
-	}
-
-	// force a vid_restart if gl_stereo has been modified.
-	if (gl_state.stereo_mode != gl_stereo->value)
-	{
-		gl_state.stereo_mode = gl_stereo->value;
-	}
-
-	if (vid_gamma->modified)
-	{
-		vid_gamma->modified = false;
-
-		if (gl_state.hwgamma)
-		{
-			Renderer_Gamma_Update();
-		}
-	}
-
-	/* go into 2D mode */
-
 	qboolean stereo_split_tb = ((gl_state.stereo_mode == STEREO_SPLIT_VERTICAL) && gl_state.camera_separation);
 	qboolean stereo_split_lr = ((gl_state.stereo_mode == STEREO_SPLIT_HORIZONTAL) && gl_state.camera_separation);
+    int eyeIndex = gl_state.eyeIndex;
 
 	int x = 0;
 	int w = vid.width;
@@ -485,17 +457,16 @@ void R_BeginFrame(float camera_separation, int eyeFrame)
 	if (stereo_split_lr)
 	{
 		w = w / 2;
-		x = eyeFrame == 0 ? 0 : w;
+		x = eyeIndex == 0 ? 0 : w;
 	}
 
 	if (stereo_split_tb)
 	{
 		h = h / 2;
-		y = eyeFrame == 0 ? h : 0;
+		y = eyeIndex == 0 ? h : 0;
 	}
 
-	glViewport(x, y, w, h);
-
+	oglwSetViewport(x, y, w, h);
 	oglwMatrixMode(GL_PROJECTION);
 	oglwLoadIdentity();
 	oglwOrtho(0, vid.width, vid.height, 0, -99999, 99999);
@@ -503,44 +474,26 @@ void R_BeginFrame(float camera_separation, int eyeFrame)
 	oglwLoadIdentity();
 
 	glDisable(GL_CULL_FACE);
+}
 
-	/* texturemode stuff */
-	if (gl_texturefilter->modified || (gl_config.anisotropic && gl_anisotropic->modified))
-	{
-		R_TextureMode(gl_texturefilter->string);
-		gl_texturefilter->modified = false;
-		gl_anisotropic->modified = false;
-	}
+static void R_SetGL2D()
+{
+    R_Setup2DViewport();
 
-	if (gl_texturealphaformat->modified)
-	{
-		R_TextureAlphaMode(gl_texturealphaformat->string);
-		gl_texturealphaformat->modified = false;
-	}
-
-	if (gl_texturesolidformat->modified)
-	{
-		R_TextureSolidMode(gl_texturesolidformat->string);
-		gl_texturesolidformat->modified = false;
-	}
-
-	oglwEnableBlending(false);
+    // ROP for 2D.
+	oglwEnableBlending(true);
 	oglwEnableAlphaTest(true);
 	oglwEnableDepthTest(false);
 	oglwEnableStencilTest(false);
-
-	oglwEnableDepthWrite(true);
-
-	/* clear screen if desired */
-	R_Clear(eyeFrame);
+	oglwEnableDepthWrite(false);
 }
 
-void R_Clear(int eyeFrame)
+static void R_Clear(int eyeIndex)
 {
 	GLbitfield clearFlags = 0;
 
 	// Color buffer.
-	if (gl_clear->value && eyeFrame == 0)
+	if (gl_clear->value && eyeIndex == 0)
 	{
 		#if defined(DEBUG)
 		glClearColor(1.0f, 0.0f, 0.5f, 0.5f);
@@ -575,6 +528,7 @@ void R_Clear(int eyeFrame)
 		gldepthmax = 1;
 		glClearDepthf(1.0f);
 		glDepthFunc(GL_LEQUAL);
+        oglwEnableDepthWrite(true);
 	}
 
 	// Stencil buffer shadows.
@@ -585,195 +539,92 @@ void R_Clear(int eyeFrame)
 	}
 
 	if (clearFlags != 0)
-	{
 		oglwClear(clearFlags);
-	}
 
-	glDepthRangef(gldepthmin, gldepthmax);
+	oglwSetDepthRange(gldepthmin, gldepthmax);
 
 	if (gl_zfix->value)
 	{
 		if (gldepthmax > gldepthmin)
-		{
 			glPolygonOffset(0.05f, 1);
-		}
 		else
-		{
 			glPolygonOffset(-0.05f, -1);
-		}
 	}
 }
 
-//----------------------------------------
-// 2D rendering.
-//----------------------------------------
-void R_SetGL2D()
+void R_BeginFrame(float camera_separation, int eyeIndex)
 {
-	/* set 2D virtual screen size */
-	qboolean drawing_left_eye = gl_state.camera_separation < 0;
-	qboolean stereo_split_tb = ((gl_state.stereo_mode == STEREO_SPLIT_VERTICAL) && gl_state.camera_separation);
-	qboolean stereo_split_lr = ((gl_state.stereo_mode == STEREO_SPLIT_HORIZONTAL) && gl_state.camera_separation);
+	gl_state.camera_separation = camera_separation;
+    gl_state.eyeIndex = eyeIndex;
 
-	int x = 0;
-	int w = vid.width;
-	int y = 0;
-	int h = vid.height;
+	/* change modes if necessary */
+	if (gl_mode->modified)
+		vid_fullscreen->modified = true;
 
-	if (stereo_split_lr)
+	// force a vid_restart if gl_stereo has been modified.
+	if (gl_state.stereo_mode != gl_stereo->value)
+		gl_state.stereo_mode = gl_stereo->value;
+
+	if (vid_gamma->modified)
 	{
-		w = w / 2;
-		x = drawing_left_eye ? 0 : w;
+		vid_gamma->modified = false;
+		if (gl_state.hwgamma)
+			Renderer_Gamma_Update();
 	}
 
-	if (stereo_split_tb)
+	/* texturemode stuff */
+	if (gl_texturefilter->modified || (gl_config.anisotropic && gl_anisotropic->modified))
 	{
-		h = h / 2;
-		y = drawing_left_eye ? h : 0;
+		R_TextureMode(gl_texturefilter->string);
+		gl_texturefilter->modified = false;
+		gl_anisotropic->modified = false;
 	}
 
-	glViewport(x, y, w, h);
-	oglwMatrixMode(GL_PROJECTION);
-	oglwLoadIdentity();
-	oglwOrtho(0, vid.width, vid.height, 0, -99999, 99999);
-	oglwMatrixMode(GL_MODELVIEW);
-	oglwLoadIdentity();
+	if (gl_texturealphaformat->modified)
+	{
+		R_TextureAlphaMode(gl_texturealphaformat->string);
+		gl_texturealphaformat->modified = false;
+	}
 
-	glDisable(GL_CULL_FACE);
+	if (gl_texturesolidformat->modified)
+	{
+		R_TextureSolidMode(gl_texturesolidformat->string);
+		gl_texturesolidformat->modified = false;
+	}
 
-	oglwEnableBlending(false);
+    R_Setup2DViewport();
+
+	R_Clear(eyeIndex);
+
+    // ROP for 2D.
+	oglwEnableBlending(true);
 	oglwEnableAlphaTest(true);
 	oglwEnableDepthTest(false);
-	oglwEnableStencilTest(false);
-
 	oglwEnableDepthWrite(false);
+	oglwEnableStencilTest(false);
 }
 
 //----------------------------------------
 // 3D rendering.
 //----------------------------------------
-static void R_SetupFrame();
-static void R_SetFrustum();
-static void R_SetupGL();
 static void R_DrawEntitiesOnList();
 static void R_DrawBeam(entity_t *e);
 static void R_PolyBlend();
 
-void R_RenderFrame(refdef_t *fd)
+void R_MYgluPerspective(GLfloat fovy, GLfloat aspect, GLfloat zNear, GLfloat zFar)
 {
-	R_RenderView(fd);
-	R_SetLightLevel();
-	R_SetGL2D();
-}
+	GLfloat xmin, xmax, ymin, ymax;
 
-// r_newrefdef must be set before the first call
-void R_RenderView(refdef_t *fd)
-{
-	if (gl_norefresh->value)
-	{
-		return;
-	}
+	ymax = zNear * tanf(fovy * Q_PI / 360.0f);
+	ymin = -ymax;
 
-	if ((gl_state.stereo_mode != STEREO_MODE_NONE) && gl_state.camera_separation)
-	{
-		qboolean drawing_left_eye = gl_state.camera_separation < 0;
-		switch (gl_state.stereo_mode)
-		{
-		case STEREO_MODE_ANAGLYPH:
-		{
-			// Work out the colour for each eye.
-			int anaglyph_colours[] = { 0x4, 0x3 };                 // Left = red, right = cyan.
+	xmin = ymin * aspect;
+	xmax = ymax * aspect;
 
-			if (Q_strlen(gl_stereo_anaglyph_colors->string) == 2)
-			{
-				int eye, colour, missing_bits;
-				// Decode the colour name from its character.
-				for (eye = 0; eye < 2; ++eye)
-				{
-					colour = 0;
-					switch (toupper(gl_stereo_anaglyph_colors->string[eye]))
-					{
-					case 'B': ++colour;                         // 001 Blue
-					case 'G': ++colour;                         // 010 Green
-					case 'C': ++colour;                         // 011 Cyan
-					case 'R': ++colour;                         // 100 Red
-					case 'M': ++colour;                         // 101 Magenta
-					case 'Y': ++colour;                         // 110 Yellow
-						anaglyph_colours[eye] = colour;
-						break;
-					}
-				}
-				// Fill in any missing bits.
-				missing_bits = ~(anaglyph_colours[0] | anaglyph_colours[1]) & 0x3;
-				for (eye = 0; eye < 2; ++eye)
-				{
-					anaglyph_colours[eye] |= missing_bits;
-				}
-			}
+	xmin += -gl_stereo_convergence->value * (2 * gl_state.camera_separation) / zNear;
+	xmax += -gl_stereo_convergence->value * (2 * gl_state.camera_separation) / zNear;
 
-			// Set the current colour.
-			glColorMask(
-				!!(anaglyph_colours[drawing_left_eye] & 0x4),
-				!!(anaglyph_colours[drawing_left_eye] & 0x2),
-				!!(anaglyph_colours[drawing_left_eye] & 0x1),
-				GL_TRUE
-			        );
-		}
-		break;
-		default:
-			break;
-		}
-	}
-
-	r_newrefdef = *fd;
-
-	if (!r_worldmodel && !(r_newrefdef.rdflags & RDF_NOWORLDMODEL))
-	{
-		VID_Error(ERR_DROP, "R_RenderView: NULL worldmodel");
-	}
-
-	if (gl_speeds->value)
-	{
-		c_brush_polys = 0;
-		c_alias_polys = 0;
-	}
-
-	R_PushDlights();
-
-	R_SetupFrame();
-
-	R_SetFrustum();
-
-	R_SetupGL();
-
-	R_MarkLeaves(); /* done here so we know if we're in water */
-
-	R_DrawWorld();
-
-	R_DrawEntitiesOnList();
-
-	R_RenderDlights();
-
-	R_Particles_Draw();
-
-	R_DrawAlphaSurfaces(1.0f, 0);
-
-	R_PolyBlend();
-
-	if (gl_speeds->value)
-	{
-		VID_Printf(PRINT_ALL, "%4i wpoly %4i epoly %i tex %i lmaps\n",
-			c_brush_polys, c_alias_polys, c_visible_textures,
-			c_visible_lightmaps);
-	}
-
-	switch (gl_state.stereo_mode)
-	{
-	case STEREO_MODE_ANAGLYPH:
-		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		break;
-	default:
-		break;
-	}
+	oglwFrustum(xmin, xmax, ymin, ymax, zNear, zFar);
 }
 
 static void R_SetupFrame()
@@ -849,22 +700,6 @@ static void R_SetupFrame()
 	}
 }
 
-void R_MYgluPerspective(GLfloat fovy, GLfloat aspect, GLfloat zNear, GLfloat zFar)
-{
-	GLfloat xmin, xmax, ymin, ymax;
-
-	ymax = zNear * tanf(fovy * Q_PI / 360.0f);
-	ymin = -ymax;
-
-	xmin = ymin * aspect;
-	xmax = ymax * aspect;
-
-	xmin += -gl_stereo_convergence->value * (2 * gl_state.camera_separation) / zNear;
-	xmax += -gl_stereo_convergence->value * (2 * gl_state.camera_separation) / zNear;
-
-	oglwFrustum(xmin, xmax, ymin, ymax, zNear, zFar);
-}
-
 static int R_SignbitsForPlane(cplane_t *out)
 {
 	/* for fast box on planeside test */
@@ -872,9 +707,7 @@ static int R_SignbitsForPlane(cplane_t *out)
 	for (int j = 0; j < 3; j++)
 	{
 		if (out->normal[j] < 0)
-		{
 			bits |= 1 << j;
-		}
 	}
 	return bits;
 }
@@ -902,7 +735,7 @@ static void R_SetFrustum()
 	}
 }
 
-static void R_SetupGL()
+static void R_Setup3D()
 {
 	/* set up viewport */
 	int x = floorf(r_newrefdef.x * vid.width / vid.width);
@@ -914,72 +747,177 @@ static void R_SetupGL()
 	int w = x2 - x;
 	int h = y - y2;
 
-	qboolean drawing_left_eye = gl_state.camera_separation < 0;
 	qboolean stereo_split_tb = ((gl_state.stereo_mode == STEREO_SPLIT_VERTICAL) && gl_state.camera_separation);
 	qboolean stereo_split_lr = ((gl_state.stereo_mode == STEREO_SPLIT_HORIZONTAL) && gl_state.camera_separation);
+    int eyeIndex = gl_state.eyeIndex;
 
 	if (stereo_split_lr)
 	{
 		w = w / 2;
-		x = drawing_left_eye ? (x / 2) : (x + vid.width) / 2;
+		x = eyeIndex ? (x / 2) : (x + vid.width) / 2;
 	}
 
 	if (stereo_split_tb)
 	{
 		h = h / 2;
-		y2 = drawing_left_eye ? (y2 + vid.height) / 2 : (y2 / 2);
+		y2 = eyeIndex ? (y2 + vid.height) / 2 : (y2 / 2);
 	}
 
-	glViewport(x, y2, w, h);
+	oglwSetViewport(x, y2, w, h);
 
 	/* set up projection matrix */
 	float screenaspect = (float)r_newrefdef.width / r_newrefdef.height;
 	oglwMatrixMode(GL_PROJECTION);
 	oglwLoadIdentity();
-
 	if (gl_farsee->value == 0)
-	{
 		R_MYgluPerspective(r_newrefdef.fov_y, screenaspect, 4, 4096);
-	}
 	else
-	{
 		R_MYgluPerspective(r_newrefdef.fov_y, screenaspect, 4, 8192);
-	}
 
 	oglwMatrixMode(GL_MODELVIEW);
 	oglwLoadIdentity();
-
-	oglwRotate(-90, 1, 0, 0); /* put Z going up */
-	oglwRotate(90, 0, 0, 1); /* put Z going up */
+	oglwRotate(-90, 1, 0, 0); // put Z going up
+	oglwRotate(90, 0, 0, 1); // put Z going up
 	oglwRotate(-r_newrefdef.viewangles[2], 1, 0, 0);
 	oglwRotate(-r_newrefdef.viewangles[0], 0, 1, 0);
 	oglwRotate(-r_newrefdef.viewangles[1], 0, 0, 1);
-	oglwTranslate(-r_newrefdef.vieworg[0], -r_newrefdef.vieworg[1],
-		-r_newrefdef.vieworg[2]);
+	oglwTranslate(-r_newrefdef.vieworg[0], -r_newrefdef.vieworg[1], -r_newrefdef.vieworg[2]);
 
 	oglwGetMatrix(GL_MODELVIEW, r_world_matrix);
 
 	glCullFace(GL_FRONT);
 	if (gl_cull->value)
-	{
 		glEnable(GL_CULL_FACE);
-	}
 	else
-	{
 		glDisable(GL_CULL_FACE);
-	}
 
 	oglwEnableBlending(false);
 	oglwEnableAlphaTest(false);
 	oglwEnableDepthTest(true);
 	oglwEnableStencilTest(false);
-
 	oglwEnableDepthWrite(true);
 	if (gl_shadows->value && graphics_has_stencil && gl_stencilshadow->value)
 	{
 		glStencilFunc(GL_EQUAL, 0, 1);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
 	}
+}
+
+// r_newrefdef must be set before the first call
+static void R_RenderView(refdef_t *fd)
+{
+	if (gl_norefresh->value)
+		return;
+
+	if ((gl_state.stereo_mode != STEREO_MODE_NONE) && gl_state.camera_separation)
+	{
+		int eyeIndex = gl_state.eyeIndex;
+		switch (gl_state.stereo_mode)
+		{
+		case STEREO_MODE_ANAGLYPH:
+		{
+			// Work out the colour for each eye.
+			int anaglyph_colours[] = { 0x4, 0x3 };                 // Left = red, right = cyan.
+
+			if (Q_strlen(gl_stereo_anaglyph_colors->string) == 2)
+			{
+				int eye, colour, missing_bits;
+				// Decode the colour name from its character.
+				for (eye = 0; eye < 2; ++eye)
+				{
+					colour = 0;
+					switch (toupper(gl_stereo_anaglyph_colors->string[eye]))
+					{
+					case 'B': ++colour;                         // 001 Blue
+					case 'G': ++colour;                         // 010 Green
+					case 'C': ++colour;                         // 011 Cyan
+					case 'R': ++colour;                         // 100 Red
+					case 'M': ++colour;                         // 101 Magenta
+					case 'Y': ++colour;                         // 110 Yellow
+						anaglyph_colours[eye] = colour;
+						break;
+					}
+				}
+				// Fill in any missing bits.
+				missing_bits = ~(anaglyph_colours[0] | anaglyph_colours[1]) & 0x3;
+				for (eye = 0; eye < 2; ++eye)
+				{
+					anaglyph_colours[eye] |= missing_bits;
+				}
+			}
+
+			// Set the current colour.
+			glColorMask(
+				!!(anaglyph_colours[eyeIndex] & 0x4),
+				!!(anaglyph_colours[eyeIndex] & 0x2),
+				!!(anaglyph_colours[eyeIndex] & 0x1),
+				GL_TRUE
+			        );
+		}
+		break;
+		default:
+			break;
+		}
+	}
+
+	r_newrefdef = *fd;
+
+	if (!r_worldmodel && !(r_newrefdef.rdflags & RDF_NOWORLDMODEL))
+	{
+		VID_Error(ERR_DROP, "R_RenderView: NULL worldmodel");
+	}
+
+	if (gl_speeds->value)
+	{
+		c_brush_polys = 0;
+		c_alias_polys = 0;
+	}
+
+	R_PushDlights();
+
+	R_SetupFrame();
+
+	R_SetFrustum();
+
+	R_Setup3D();
+
+	R_MarkLeaves(); /* done here so we know if we're in water */
+
+	R_DrawWorld();
+
+	R_DrawEntitiesOnList();
+
+	R_RenderDlights();
+
+	R_Particles_Draw();
+
+	R_DrawAlphaSurfaces(1.0f, 0);
+
+	R_PolyBlend();
+
+	if (gl_speeds->value)
+	{
+		VID_Printf(PRINT_ALL, "%4i wpoly %4i epoly %i tex %i lmaps\n",
+			c_brush_polys, c_alias_polys, c_visible_textures,
+			c_visible_lightmaps);
+	}
+
+	switch (gl_state.stereo_mode)
+	{
+	case STEREO_MODE_ANAGLYPH:
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		break;
+	default:
+		break;
+	}
+
+    R_SetGL2D();
+}
+
+void R_RenderFrame(refdef_t *fd)
+{
+	R_RenderView(fd);
+	R_SetLightLevel();
 }
 
 // Returns true if the box is completely outside the frustom
@@ -1032,9 +970,7 @@ static void R_DrawBeam(entity_t *e)
 	normalized_direction[2] = direction[2] = oldorigin[2] - origin[2];
 
 	if (VectorNormalize(normalized_direction) == 0)
-	{
 		return;
-	}
 
 	PerpendicularVector(perpvec, normalized_direction);
 	VectorScale(perpvec, e->frame / 2, perpvec);
@@ -1057,7 +993,7 @@ static void R_DrawBeam(entity_t *e)
 	float b = pc[2] * (1 / 255.0f);
 	float a = e->alpha;
 
-	OpenGLWrapperVertex *vtx;
+	OglwVertex *vtx;
 	vtx = oglwAllocateTriangleStrip(NUM_BEAM_SEGS * 4);
 	for (int i = 0; i < NUM_BEAM_SEGS; i++)
 	{
@@ -1095,17 +1031,13 @@ void R_DrawSpriteModel(entity_t *e)
 
 	float alpha = 1.0F;
 	if (e->flags & RF_TRANSLUCENT)
-	{
 		alpha = e->alpha;
-	}
 	if (alpha == 1.0f)
-	{
 		oglwEnableAlphaTest(true);
-	}
 
 	oglwBegin(GL_TRIANGLES);
 
-	OpenGLWrapperVertex *vtx = oglwAllocateQuad(4);
+	OglwVertex *vtx = oglwAllocateQuad(4);
 
 	vec3_t p;
 
@@ -1128,9 +1060,7 @@ void R_DrawSpriteModel(entity_t *e)
 	oglwEnd();
 
 	if (alpha == 1.0f)
-	{
 		oglwEnableAlphaTest(false);
-	}
 
 	oglwSetTextureBlending(0, GL_REPLACE);
 }
@@ -1160,7 +1090,7 @@ void R_DrawNullModel()
 
 	oglwBegin(GL_TRIANGLES);
 
-	OpenGLWrapperVertex *vtx;
+	OglwVertex *vtx;
 
 	vtx = oglwAllocateTriangleFan(6);
 	vtx = AddVertex3D_C(vtx, 0.0f, 0.0f, -16.0f, shadelight[0], shadelight[1], shadelight[2], alpha);
@@ -1227,9 +1157,7 @@ static void R_DrawEntitiesOnList()
 	{
 		currententity = &r_newrefdef.entities[i];
 		if (currententity->flags & RF_TRANSLUCENT)
-		{
 			continue;
-		}
 		R_DrawCurrentEntity();
 	}
 
@@ -1256,9 +1184,7 @@ static void R_SetLightLevel()
 	vec3_t shadelight;
 
 	if (r_newrefdef.rdflags & RDF_NOWORLDMODEL)
-	{
 		return;
-	}
 
 	/* save off light value for server to look at */
 	R_LightPoint(r_newrefdef.vieworg, shadelight);
@@ -1268,38 +1194,26 @@ static void R_SetLightLevel()
 	if (shadelight[0] > shadelight[1])
 	{
 		if (shadelight[0] > shadelight[2])
-		{
 			gl_lightlevel->value = 150 * shadelight[0];
-		}
 		else
-		{
 			gl_lightlevel->value = 150 * shadelight[2];
-		}
 	}
 	else
 	{
 		if (shadelight[1] > shadelight[2])
-		{
 			gl_lightlevel->value = 150 * shadelight[1];
-		}
 		else
-		{
 			gl_lightlevel->value = 150 * shadelight[2];
-		}
 	}
 }
 
 static void R_PolyBlend()
 {
 	if (!gl_fullscreenflash->value)
-	{
 		return;
-	}
 
 	if (!v_blend[3])
-	{
 		return;
-	}
 
 	oglwEnableBlending(true);
 	oglwEnableDepthTest(false);
@@ -1313,7 +1227,7 @@ static void R_PolyBlend()
 	oglwRotate(90, 0, 0, 1); /* put Z going up */
 
 	oglwBegin(GL_TRIANGLES);
-	OpenGLWrapperVertex *vtx = oglwAllocateQuad(4);
+	OglwVertex *vtx = oglwAllocateQuad(4);
 	vtx = AddVertex3D_C(vtx, 10, 100, 100, v_blend[0], v_blend[1], v_blend[2], v_blend[3]);
 	vtx = AddVertex3D_C(vtx, 10, -100, 100, v_blend[0], v_blend[1], v_blend[2], v_blend[3]);
 	vtx = AddVertex3D_C(vtx, 10, -100, -100, v_blend[0], v_blend[1], v_blend[2], v_blend[3]);
@@ -1445,7 +1359,7 @@ static void R_Particles_DrawWithQuads(int num_particles, const particle_t partic
 	VectorScale(vright, 1.0f, right);
 
 	oglwBegin(GL_TRIANGLES);
-	OpenGLWrapperVertex *vtx = oglwAllocateQuad(num_particles * 4);
+	OglwVertex *vtx = oglwAllocateQuad(num_particles * 4);
 
 	float pixelWidthAtDepth1 = 2.0f * tanf(r_newrefdef.fov_x * Q_PI / 360.0f) / (float)r_newrefdef.width; // Pixel width if the near plane is at depth 1.0.
 
@@ -1490,7 +1404,7 @@ static void R_Particles_DrawWithQuads(int num_particles, const particle_t partic
 	oglwSetTextureBlending(0, GL_REPLACE);
 }
 
-#if !defined(GLES2)
+#if !defined(EGLW_GLES2)
 static void R_Particles_DrawWithPoints(int num_particles, const particle_t particles[])
 {
 	bool particleTextureUsed = gl_particle_sprite->value != 0.0f;
@@ -1509,7 +1423,7 @@ static void R_Particles_DrawWithPoints(int num_particles, const particle_t parti
 	glPointSize(gl_particle_size->value);
 
 	oglwBegin(GL_POINTS);
-	OpenGLWrapperVertex *vtx = oglwAllocateVertex(num_particles);
+	OglwVertex *vtx = oglwAllocateVertex(num_particles);
 
 	int i;
 	const particle_t *p;
@@ -1548,7 +1462,7 @@ static void R_Particles_Draw()
 	oglwEnableBlending(true);
 	oglwEnableDepthWrite(false);
 
-	#if !defined(GLES2)
+	#if !defined(EGLW_GLES2)
 	qboolean stereo_split_tb = ((gl_state.stereo_mode == STEREO_SPLIT_VERTICAL) && gl_state.camera_separation);
 	qboolean stereo_split_lr = ((gl_state.stereo_mode == STEREO_SPLIT_HORIZONTAL) && gl_state.camera_separation);
 	if (gl_particle_point->value && !(stereo_split_tb || stereo_split_lr))

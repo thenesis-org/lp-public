@@ -16,12 +16,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307,
  * USA.
- *
- * =======================================================================
- *
- * ABI to the video oute driver
- *
- * =======================================================================
  */
 
 #ifndef CL_VID_H
@@ -41,14 +35,13 @@ typedef struct
 
 extern viddef_t viddef; /* global video state */
 
-/* Video module initialisation, etc */
-void VID_Init();
-void VID_Shutdown();
-void VID_CheckChanges();
-
 void VID_Printf(int print_level, char *fmt, ...);
 void VID_Error(int err_level, char *fmt, ...);
 
+void VID_Init();
+void VID_Shutdown();
+void VID_toggleFullScreen();
+void VID_CheckChanges();
 void VID_NewWindow(int width, int height);
 
 #endif

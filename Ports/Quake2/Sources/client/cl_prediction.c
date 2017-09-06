@@ -218,7 +218,7 @@ int CL_PMpointcontents(vec3_t point)
 /*
  * Sets cl.predicted_origin and cl.predicted_angles
  */
-void CL_PredictMovement(void)
+void CL_PredictMovement()
 {
 	int ack, current;
 	int frame;
@@ -230,14 +230,10 @@ void CL_PredictMovement(void)
 	int oldz;
 
 	if (cls.state != ca_active)
-	{
 		return;
-	}
 
 	if (cl_paused->value)
-	{
 		return;
-	}
 
 	if (!cl_predict->value ||
 	    (cl.frame.playerstate.pmove.pm_flags & PMF_NO_PREDICTION))

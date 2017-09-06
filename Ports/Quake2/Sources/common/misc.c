@@ -180,7 +180,7 @@ void Com_Error_f()
 	Com_Error(ERR_FATAL, "%s", Cmd_Argv(1));
 }
 
-void Qcommon_Init(int argc, char **argv)
+static void Qcommon_Init(int argc, char **argv)
 {
 	char *s;
 
@@ -218,9 +218,9 @@ void Qcommon_Init(int argc, char **argv)
 
 	FS_InitFilesystem();
 
-	Cbuf_AddText("exec default.cfg\n");
-	Cbuf_AddText("exec platform.cfg\n");
-	Cbuf_AddText("exec config.cfg\n");
+	Cbuf_AddText("exec default.cfg\n"); // default.cfg is in a .pak file and thus cannot be modified.
+	Cbuf_AddText("exec platform.cfg\n"); // platform.cfg is a platform specific file which is only read. It is generally on the file system, in the game directory.
+	Cbuf_AddText("exec user.cfg\n"); // user.cfg is the user file, which is read and written in a subdirectory of the system home (user) directory.
 
 	Cbuf_AddEarlyCommands(true);
 	Cbuf_Execute();
@@ -290,7 +290,7 @@ void Qcommon_Init(int argc, char **argv)
 	Com_Printf("*************************************\n\n");
 }
 
-void Qcommon_Frame(int msec_)
+static void Qcommon_Frame(int msec_)
 {
 	volatile int msec = msec_; // To avoid the warning about clobbered argument.
 	if (setjmp(abortframe))
@@ -408,4 +408,72 @@ void Qcommon_Frame(int msec_)
 			all, sv, gm, cl, rf);
 	}
 	#endif
+}
+
+void Qcommon_Run(int argc, char **argv)
+{
+	/* Redirect stdout and stderr into a file */
+	#ifndef DEDICATED_ONLY
+	extern void Sys_RedirectStdout();
+	Sys_RedirectStdout();
+	#endif
+
+	const char *versionString = va("%s based on Yamagi Quake II v5.34", QUAKE2_COMPLETE_NAME);
+	int verLen = Q_strlen(versionString);
+	printf("\n%s\n", versionString);
+	for (int i = 0; i < verLen; ++i)
+		putc('=', stdout);
+	puts("\n");
+
+	#ifndef DEDICATED_ONLY
+	printf("Client build options:\n");
+	#ifdef OGG
+	printf(" + OGG/Vorbis\n");
+	#else
+	printf(" - OGG/Vorbis\n");
+	#endif
+	#ifdef USE_OPENAL
+	printf(" + OpenAL audio\n");
+	#else
+	printf(" - OpenAL audio\n");
+	#endif
+	#ifdef ZIP
+	printf(" + Zip file support\n");
+	#else
+	printf(" - Zip file support\n");
+	#endif
+	#endif
+
+	printf("Platform: %s\n", OSTYPE);
+	printf("Architecture: %s\n", ARCH);
+
+	/* Seed PRNG */
+	randk_seed();
+
+	/* Initialze the game */
+	Qcommon_Init(argc, argv);
+
+	/* Do not delay reads on stdin*/
+	//fcntl(fileno(stdin), F_SETFL, fcntl(fileno(stdin), F_GETFL, NULL) | O_NONBLOCK);
+
+	int oldtime = Sys_Milliseconds();
+
+	/* The legendary Quake II mainloop */
+	while (1)
+	{
+		if (sdlwIsExitRequested())
+			Com_Quit();
+
+		/* find time spent rendering last frame */
+		int newtime, time;
+		do
+		{
+			newtime = Sys_Milliseconds();
+			time = newtime - oldtime;
+		}
+		while (time < 1);
+
+		Qcommon_Frame(time);
+		oldtime = newtime;
+	}
 }

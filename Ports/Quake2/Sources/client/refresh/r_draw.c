@@ -31,13 +31,13 @@
 image_t *draw_chars;
 
 extern qboolean scrap_dirty;
-void Scrap_Upload(void);
+void Scrap_Upload();
 
 extern unsigned r_rawpalette[256];
 
 static cvar_t *gl_nolerp_list;
 
-void Draw_InitLocal(void)
+void Draw_InitLocal()
 {
 	/* don't bilerp characters and crosshairs */
 	gl_nolerp_list = Cvar_Get("gl_nolerp_list", "pics/conchars.pcx pics/ch1.pcx pics/ch2.pcx pics/ch3.pcx", 0);
@@ -80,14 +80,10 @@ void Draw_CharScaled(int x, int y, int num, float scale)
 	num &= 255;
 
 	if ((num & 127) == 32)
-	{
 		return; /* space */
-	}
 
 	if (y <= -8)
-	{
 		return; /* totally off screen */
-	}
 
 	row = num >> 4;
 	col = num & 15;
@@ -105,13 +101,11 @@ void Draw_CharScaled(int x, int y, int num, float scale)
 		Draw_CharBegin();
 	}
 
-	OpenGLWrapperVertex *v = oglwAllocateVertex(4);
+	OglwVertex *v = oglwAllocateVertex(4);
 	AddQuad2D_T1(v, x, y, x + scaledSize, y + scaledSize, fcol, frow, fcol + size, frow + size);
 
 	if (begin)
-	{
 		Draw_CharEnd();
-	}
 }
 
 image_t* Draw_FindPic(char *name)
@@ -134,10 +128,7 @@ image_t* Draw_FindPic(char *name)
 
 void Draw_GetPicSize(int *w, int *h, char *pic)
 {
-	image_t *gl;
-
-	gl = Draw_FindPic(pic);
-
+	image_t *gl = Draw_FindPic(pic);
 	if (!gl)
 	{
 		*w = *h = -1;
@@ -150,10 +141,7 @@ void Draw_GetPicSize(int *w, int *h, char *pic)
 
 void Draw_StretchPic(int x, int y, int w, int h, char *pic)
 {
-	image_t *gl;
-
-	gl = Draw_FindPic(pic);
-
+	image_t *gl = Draw_FindPic(pic);
 	if (!gl)
 	{
 		VID_Printf(PRINT_ALL, "Can't find pic: %s\n", pic);
@@ -161,13 +149,11 @@ void Draw_StretchPic(int x, int y, int w, int h, char *pic)
 	}
 
 	if (scrap_dirty)
-	{
 		Scrap_Upload();
-	}
 
 	oglwBindTexture(0, gl->texnum);
 	oglwBegin(GL_QUADS);
-	OpenGLWrapperVertex *v = oglwAllocateVertex(4);
+	OglwVertex *v = oglwAllocateVertex(4);
 	AddQuad2D_T1(v, x, y, x + w, y + h, gl->sl, gl->tl, gl->sh, gl->th);
 	oglwEnd();
 }
@@ -179,10 +165,7 @@ void Draw_Pic(int x, int y, char *pic)
 
 void Draw_PicScaled(int x, int y, char *pic, float factor)
 {
-	image_t *gl;
-
-	gl = Draw_FindPic(pic);
-
+	image_t *gl = Draw_FindPic(pic);
 	if (!gl)
 	{
 		VID_Printf(PRINT_ALL, "Can't find pic: %s\n", pic);
@@ -190,16 +173,14 @@ void Draw_PicScaled(int x, int y, char *pic, float factor)
 	}
 
 	if (scrap_dirty)
-	{
 		Scrap_Upload();
-	}
 
 	GLfloat w = gl->width * factor;
 	GLfloat h = gl->height * factor;
 
 	oglwBindTexture(0, gl->texnum);
 	oglwBegin(GL_QUADS);
-	OpenGLWrapperVertex *v = oglwAllocateVertex(4);
+	OglwVertex *v = oglwAllocateVertex(4);
 	AddQuad2D_T1(v, x, y, x + w, y + h, gl->sl, gl->tl, gl->sh, gl->th);
 	oglwEnd();
 }
@@ -211,10 +192,7 @@ void Draw_PicScaled(int x, int y, char *pic, float factor)
  */
 void Draw_TileClear(int x, int y, int w, int h, char *pic)
 {
-	image_t *image;
-
-	image = Draw_FindPic(pic);
-
+	image_t *image = Draw_FindPic(pic);
 	if (!image)
 	{
 		VID_Printf(PRINT_ALL, "Can't find pic: %s\n", pic);
@@ -223,7 +201,7 @@ void Draw_TileClear(int x, int y, int w, int h, char *pic)
 
 	oglwBindTexture(0, image->texnum);
 	oglwBegin(GL_QUADS);
-	OpenGLWrapperVertex *v = oglwAllocateVertex(4);
+	OglwVertex *v = oglwAllocateVertex(4);
 	float s = 1.0f / 64.0f;
 	AddQuad2D_T1(v, x, y, x + w, y + h, x * s, y * s, (x + w) * s, (y + h) * s);
 	oglwEnd();
@@ -235,13 +213,11 @@ void Draw_TileClear(int x, int y, int w, int h, char *pic)
 void Draw_Fill(int x, int y, int w, int h, int c)
 {
 	if ((unsigned)c > 255)
-	{
 		VID_Error(ERR_FATAL, "Draw_Fill: bad color");
-	}
 
 	oglwEnableTexturing(0, GL_FALSE);
 	oglwBegin(GL_QUADS);
-	OpenGLWrapperVertex *v = oglwAllocateVertex(4);
+	OglwVertex *v = oglwAllocateVertex(4);
 	unsigned char *pc = d_8to24table[c];
 	AddQuad2D_C(v, x, y, x + w, y + h, pc[0] * (1.0f / 255.0f), pc[1] * (1.0f / 255.0f), pc[2] * (1.0f / 255.0f), 1.0f);
 	oglwEnd();
@@ -250,18 +226,14 @@ void Draw_Fill(int x, int y, int w, int h, int c)
 
 void Draw_FadeScreen()
 {
-	oglwEnableBlending(true);
-
 	oglwEnableTexturing(0, GL_FALSE);
 
 	oglwBegin(GL_QUADS);
-	OpenGLWrapperVertex *v = oglwAllocateVertex(4);
+	OglwVertex *v = oglwAllocateVertex(4);
 	AddQuad2D_C(v, 0, 0, vid.width, vid.height, 0.0f, 0.0f, 0.0f, 0.8f);
 	oglwEnd();
 
 	oglwEnableTexturing(0, GL_TRUE);
-
-	oglwEnableBlending(false);
 }
 
 void Draw_StretchRaw(int x, int y, int w, int h, int cols, int rows, byte *data)
@@ -293,11 +265,8 @@ void Draw_StretchRaw(int x, int y, int w, int h, int cols, int rows, byte *data)
 		for (i = 0; i < trows; i++)
 		{
 			row = (int)(i * hscale);
-
 			if (row > rows)
-			{
 				break;
-			}
 
 			source = data + cols * row;
 			dest = &image32[i * 256];
@@ -322,7 +291,7 @@ void Draw_StretchRaw(int x, int y, int w, int h, int cols, int rows, byte *data)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	oglwBegin(GL_QUADS);
-	OpenGLWrapperVertex *v = oglwAllocateVertex(4);
+	OglwVertex *v = oglwAllocateVertex(4);
 	AddQuad2D_T1(v, x, y, x + w, y + h, 1.0f / 512.0f, 1.0f / 512.0f, 511.0f / 512.0f, t);
 	oglwEnd();
 }
@@ -336,9 +305,7 @@ int Draw_GetPalette()
 	LoadPCX("pics/colormap.pcx", &pic, &pal, &width, &height);
 
 	if (!pal)
-	{
 		VID_Error(ERR_FATAL, "Couldn't load pics/colormap.pcx");
-	}
 
 	for (int i = 0; i < 255; i++)
 	{

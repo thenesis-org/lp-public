@@ -27,6 +27,21 @@
  * =======================================================================
  */
 
+// Hardwrired keys.
+// 
+// Anywhere:
+// - Shift + Escape: open console
+// - Alt + Return: fullscreen switch
+// Menus:
+// - Escape: exit menu
+// - Enter: enter sub menu if the cursor is on a submenu entry
+// Console:
+// - Escape: cancel, exit console, exit current menu, pause game and open menu
+// - Tab: autocompletion
+// Game:
+// - Escape: open menu
+
+
 #include "client/client.h"
 #include "refresh/local.h"
 
@@ -43,12 +58,31 @@ int anykeydown;
 int edit_line = 0;
 int history_line = 0;
 
-int key_waiting;
+#if 0 // TODO: Implementation of key modifiers for multiple bindings per key. 
+enum
+{
+    KeyModifierMaxNb = 2
+    KeyBindingMaxNb =  1 << KeyModifierMaxNb;
+};
+
+typedef struct KeyBinding_
+{
+    char *bindings[KeyBindingMaxNb];
+    int repeatCount; //  If > 1, it is autorepeating
+    bool consoleFlag; // If true, can't be rebound while in console
+    bool menuFlag; // If true, can't be rebound while in menu
+    bool downFlag;
+} KeyBinding;
+
+KeyBinding keyBindings[K_LAST];
+
+#endif
+
 char *keybindings[K_LAST];
-qboolean consolekeys[K_LAST]; /* if true, can't be rebound while in console */
-qboolean menubound[K_LAST]; /* if true, can't be rebound while in menu */
-int key_repeats[K_LAST]; /* if > 1, it is autorepeating */
-qboolean keydown[K_LAST];
+static qboolean consolekeys[K_LAST]; /* if true, can't be rebound while in console */
+static qboolean menubound[K_LAST]; /* if true, can't be rebound while in menu */
+static int key_repeats[K_LAST]; /* if > 1, it is autorepeating */
+static qboolean keydown[K_LAST];
 
 qboolean Cmd_IsComplete(char *cmd);
 
@@ -212,8 +246,6 @@ keyname_t keynames[] =
 	{ "MWHEELUP", K_MWHEELUP },
 	{ "MWHEELDOWN", K_MWHEELDOWN },
 
-	{ "PAUSE", K_PAUSE },
-
 	{ "SEMICOLON", ';' }, /* because a raw semicolon seperates commands */
 
 	{ NULL, 0 }
@@ -221,19 +253,13 @@ keyname_t keynames[] =
 
 /* ------------------------------------------------------------------ */
 
-void CompleteCommand(void)
+void CompleteCommand()
 {
-	char *cmd, *s;
-
-	s = key_lines[edit_line] + 1;
-
+	char *s = key_lines[edit_line] + 1;
 	if ((*s == '\\') || (*s == '/'))
-	{
 		s++;
-	}
 
-	cmd = Cmd_CompleteCommand(s);
-
+	char *cmd = Cmd_CompleteCommand(s);
 	if (cmd)
 	{
 		key_lines[edit_line][1] = '/';
@@ -260,20 +286,10 @@ void CompleteCommand(void)
  */
 void Key_Console(int key)
 {
-	if (key == 'l')
-	{
-		if (keydown[K_CTRL])
-		{
-			Cbuf_AddText("clear\n");
-			return;
-		}
-	}
-
-	if ((key == K_ENTER) || (key == K_KP_ENTER))
+	if (key == K_ENTER || key == K_KP_ENTER)
 	{
 		/* slash text are commands, else chat */
-		if ((key_lines[edit_line][1] == '\\') ||
-		    (key_lines[edit_line][1] == '/'))
+		if ((key_lines[edit_line][1] == '\\') || (key_lines[edit_line][1] == '/'))
 		{
 			Cbuf_AddText(key_lines[edit_line] + 2); /* skip the > */
 		}
@@ -290,11 +306,7 @@ void Key_Console(int key)
 		key_linepos = 1;
 
 		if (cls.state == ca_disconnected)
-		{
-			SCR_UpdateScreen(); /* force an update, because the command
-			                                               may take some time */
-		}
-
+			SCR_UpdateScreen(); /* force an update, because the command may take some time */
 		return;
 	}
 
@@ -305,14 +317,10 @@ void Key_Console(int key)
 		return;
 	}
 
-	if ((key == K_BACKSPACE) || (key == K_LEFTARROW) ||
-	    ((key == 'h') && (keydown[K_CTRL])))
+	if (key == K_BACKSPACE || key == K_LEFTARROW)
 	{
 		if (key_linepos > 1)
-		{
 			key_linepos--;
-		}
-
 		return;
 	}
 
@@ -324,7 +332,7 @@ void Key_Console(int key)
 		return;
 	}
 
-	if ((key == K_UPARROW) || ((key == 'p') && keydown[K_CTRL]))
+	if (key == K_UPARROW)
 	{
 		do
 		{
@@ -334,21 +342,17 @@ void Key_Console(int key)
 		       !key_lines[history_line][1]);
 
 		if (history_line == edit_line)
-		{
 			history_line = (edit_line + 1) & (NUM_KEY_LINES - 1);
-		}
 
 		strcpy(key_lines[edit_line], key_lines[history_line]);
 		key_linepos = (int)Q_strlen(key_lines[edit_line]);
 		return;
 	}
 
-	if ((key == K_DOWNARROW) || ((key == 'n') && keydown[K_CTRL]))
+	if (key == K_DOWNARROW)
 	{
 		if (history_line == edit_line)
-		{
 			return;
-		}
 
 		do
 		{
@@ -371,58 +375,40 @@ void Key_Console(int key)
 		return;
 	}
 
-	if ((key == K_PGUP) || (key == K_MWHEELUP) ||
-	    (key == K_MOUSE4))
+	if (key == K_PGUP || key == K_MWHEELUP)
 	{
 		con.display -= 2;
 		return;
 	}
 
-	if ((key == K_PGDN) || (key == K_MWHEELDOWN) ||
-	    (key == K_MOUSE5))
+	if (key == K_PGDN || key == K_MWHEELDOWN)
 	{
 		con.display += 2;
-
 		if (con.display > con.current)
-		{
 			con.display = con.current;
-		}
-
 		return;
 	}
 
-	if ((key == K_HOME))
+	if (key == K_HOME)
 	{
 		if (keydown[K_CTRL])
-		{
 			con.display = con.current - con.totallines + 10;
-		}
 		else
-		{
 			key_linepos = 1;
-		}
-
 		return;
 	}
 
-	if ((key == K_END))
+	if (key == K_END)
 	{
 		if (keydown[K_CTRL])
-		{
 			con.display = con.current;
-		}
 		else
-		{
 			key_linepos = (int)Q_strlen(key_lines[edit_line]);
-		}
-
 		return;
 	}
 
 	if ((key < 32) || (key > 127))
-	{
 		return; /* non printable character */
-	}
 
 	if (key_linepos < MAXCMDLINE - 1)
 	{
@@ -432,9 +418,7 @@ void Key_Console(int key)
 		length = Q_strlen(key_lines[edit_line]);
 
 		if (length >= MAXCMDLINE - 1)
-		{
 			return;
-		}
 
 		last = key_lines[edit_line][key_linepos];
 
@@ -461,16 +445,12 @@ void Key_Message(int key)
 {
 	char last;
 
-	if ((key == K_ENTER) || (key == K_KP_ENTER))
+	if (key == K_ENTER || key == K_KP_ENTER)
 	{
 		if (chat_team)
-		{
 			Cbuf_AddText("say_team \"");
-		}
 		else
-		{
 			Cbuf_AddText("say \"");
-		}
 
 		Cbuf_AddText(chat_buffer);
 		Cbuf_AddText("\"\n");
@@ -514,17 +494,13 @@ void Key_Message(int key)
 				chat_bufferlen - chat_cursorpos + 1);
 			chat_bufferlen--;
 		}
-
 		return;
 	}
 
 	if (key == K_LEFTARROW)
 	{
 		if (chat_cursorpos > 0)
-		{
 			chat_cursorpos--;
-		}
-
 		return;
 	}
 
@@ -543,22 +519,15 @@ void Key_Message(int key)
 	if (key == K_RIGHTARROW)
 	{
 		if (chat_buffer[chat_cursorpos])
-		{
 			chat_cursorpos++;
-		}
-
 		return;
 	}
 
 	if ((key < 32) || (key > 127))
-	{
 		return; /* non printable charcter */
-	}
 
 	if (chat_bufferlen == sizeof(chat_buffer) - 1)
-	{
 		return; /* all full, this should never happen on modern systems */
-	}
 
 	memmove(chat_buffer + chat_cursorpos + 1,
 		chat_buffer + chat_cursorpos,
@@ -572,9 +541,7 @@ void Key_Message(int key)
 	chat_cursorpos++;
 
 	if (!last)
-	{
 		chat_buffer[chat_cursorpos] = 0;
-	}
 }
 
 /*
@@ -588,21 +555,15 @@ int Key_StringToKeynum(char *str)
 	keyname_t *kn;
 
 	if (!str || !str[0])
-	{
 		return -1;
-	}
 
 	if (!str[1])
-	{
 		return str[0];
-	}
 
 	for (kn = keynames; kn->name; kn++)
 	{
 		if (!Q_stricmp(str, kn->name))
-		{
 			return kn->keynum;
-		}
 	}
 
 	return -1;
@@ -615,9 +576,7 @@ int Key_StringToKeynum(char *str)
 char* Key_KeynumToString(int keynum)
 {
 	if (keynum == -1)
-	{
 		return "<KEY NOT FOUND>";
-	}
 
 	static char tinystr[2] = { 0 };
 	if ((keynum > 32) && (keynum < 127))
@@ -631,9 +590,7 @@ char* Key_KeynumToString(int keynum)
 	for (kn = keynames; kn->name; kn++)
 	{
 		if (keynum == kn->keynum)
-		{
 			return kn->name;
-		}
 	}
 
 	return "<UNKNOWN KEYNUM>";
@@ -645,9 +602,7 @@ void Key_SetBinding(int keynum, char *binding)
 	int l;
 
 	if (keynum == -1)
-	{
 		return;
-	}
 
 	/* free old bindings */
 	if (keybindings[keynum])
@@ -664,37 +619,29 @@ void Key_SetBinding(int keynum, char *binding)
 	keybindings[keynum] = new;
 }
 
-void Key_Unbind_f(void)
+void Key_Unbind_f()
 {
-	int b;
-
 	if (Cmd_Argc() != 2)
 	{
 		Com_Printf("unbind <key> : remove commands from a key\n");
 		return;
 	}
 
-	b = Key_StringToKeynum(Cmd_Argv(1));
-
+	int b = Key_StringToKeynum(Cmd_Argv(1));
 	if (b == -1)
 	{
 		Com_Printf("\"%s\" isn't a valid key\n", Cmd_Argv(1));
 		return;
 	}
-
 	Key_SetBinding(b, "");
 }
 
 void Key_Unbindall_f()
 {
-	int i;
-
-	for (i = 0; i < K_LAST; i++)
+	for (int i = 0; i < K_LAST; i++)
 	{
 		if (keybindings[i])
-		{
 			Key_SetBinding(i, "");
-		}
 	}
 }
 
@@ -704,18 +651,14 @@ extern qboolean doneWithDefaultCfg;
 
 void Key_Bind_f()
 {
-	int i, c, b;
-	char cmd[1024];
-
-	c = Cmd_Argc();
-
+	int c = Cmd_Argc();
 	if (c < 2)
 	{
 		Com_Printf("bind <key> [command] : attach a command to a key\n");
 		return;
 	}
 
-	b = Key_StringToKeynum(Cmd_Argv(1));
+	int b = Key_StringToKeynum(Cmd_Argv(1));
 
 	if (b == -1)
 	{
@@ -723,8 +666,8 @@ void Key_Bind_f()
 		return;
 	}
 
-	/* don't allow binding escape or the special console keys */
-	if (b == K_GAMEPAD_SELECT || b == K_ESCAPE || b == '^' || b == '`' || b == '~')
+	/* don't allow binding escape */
+	if (b == K_GAMEPAD_SELECT || b == K_ESCAPE)
 	{
 		if (doneWithDefaultCfg)
 		{
@@ -737,28 +680,20 @@ void Key_Bind_f()
 	if (c == 2)
 	{
 		if (keybindings[b])
-		{
 			Com_Printf("\"%s\" = \"%s\"\n", Cmd_Argv(1), keybindings[b]);
-		}
 		else
-		{
 			Com_Printf("\"%s\" is not bound\n", Cmd_Argv(1));
-		}
-
 		return;
 	}
 
 	/* copy the rest of the command line */
+	char cmd[1024];
 	cmd[0] = 0; /* start out with a null string */
-
-	for (i = 2; i < c; i++)
+	for (int i = 2; i < c; i++)
 	{
 		strcat(cmd, Cmd_Argv(i));
-
 		if (i != (c - 1))
-		{
 			strcat(cmd, " ");
-		}
 	}
 
 	Key_SetBinding(b, cmd);
@@ -786,12 +721,10 @@ void Key_WriteBindings(FILE *f)
 
 void Key_WriteConsoleHistory()
 {
-	int i;
 	char path[MAX_OSPATH];
 	Com_sprintf(path, sizeof(path), "%sconsole_history.txt", Sys_GetHomeDir());
 
 	FILE * f = fopen(path, "w");
-
 	if (f == NULL)
 	{
 		Com_Printf("Opening console history %s for writing failed!\n", path);
@@ -801,7 +734,7 @@ void Key_WriteConsoleHistory()
 	// save the oldest lines first by starting at edit_line
 	// and going forward (and wrapping around)
 	const char * lastWrittenLine = "";
-	for (i = 0; i < NUM_KEY_LINES; ++i)
+	for (int i = 0; i < NUM_KEY_LINES; ++i)
 	{
 		int lineIdx = (edit_line + i) & (NUM_KEY_LINES - 1);
 		const char * line = key_lines[lineIdx];
@@ -823,8 +756,6 @@ void Key_WriteConsoleHistory()
 /* initializes key_lines from history file, if available */
 void Key_ReadConsoleHistory()
 {
-	int i;
-
 	char path[MAX_OSPATH];
 	Com_sprintf(path, sizeof(path), "%sconsole_history.txt", Sys_GetHomeDir());
 
@@ -835,7 +766,7 @@ void Key_ReadConsoleHistory()
 		return;
 	}
 
-	for (i = 0; i < NUM_KEY_LINES; i++)
+	for (int i = 0; i < NUM_KEY_LINES; i++)
 	{
 		if (fgets(key_lines[i], MAXCMDLINE, f) == NULL)
 		{
@@ -856,11 +787,9 @@ void Key_ReadConsoleHistory()
 	fclose(f);
 }
 
-void Key_Bindlist_f(void)
+void Key_Bindlist_f()
 {
-	int i;
-
-	for (i = 0; i < K_LAST; i++)
+	for (int i = 0; i < K_LAST; i++)
 	{
 		if (keybindings[i] && keybindings[i][0])
 		{
@@ -871,8 +800,7 @@ void Key_Bindlist_f(void)
 
 void Key_Init()
 {
-	int i;
-	for (i = 0; i < NUM_KEY_LINES; i++)
+	for (int i = 0; i < NUM_KEY_LINES; i++)
 	{
 		key_lines[i][0] = ']';
 		key_lines[i][1] = 0;
@@ -882,11 +810,8 @@ void Key_Init()
 	key_linepos = 1;
 
 	/* init 128 bit ascii characters in console mode */
-	for (i = 32; i < K_LAST; i++)
-	{
+	for (int i = 32; i < K_LAST; i++)
 		consolekeys[i] = true;
-	}
-
 	consolekeys[K_ENTER] = true;
 	consolekeys[K_TAB] = true;
 	consolekeys[K_LEFTARROW] = true;
@@ -904,15 +829,8 @@ void Key_Init()
 
 	menubound[K_ESCAPE] = true;
 	menubound[K_GAMEPAD_SELECT] = true;
-
-	consolekeys['`'] = false;
-	consolekeys['~'] = false;
-	consolekeys['^'] = false;
-
-	for (i = 0; i < 12; i++)
-	{
+	for (int i = 0; i < 12; i++)
 		menubound[K_F1 + i] = true;
-	}
 
 	/* register our variables */
 	cfg_unbindall = Cvar_Get("cfg_unbindall", "1", CVAR_ARCHIVE);
@@ -924,78 +842,134 @@ void Key_Init()
 	Cmd_AddCommand("bindlist", Key_Bindlist_f);
 }
 
+static bool Key_isSpecial(int key)
+{
+    return !(key >= ' ' && key < '~');
+}
+
 /*
  * Called every frame for every detected keypress.
  * ASCII input for the console, the menu and the
  * chat window are handled by this function.
  * Anything else is handled by Key_Event().
  */
-void Char_Event(int key)
+void Char_Event(int key, bool specialOnlyFlag)
 {
-	/* console key is hardcoded, so the user can never unbind it */
-	if ((key == '^') || (key == '~') || (key == '`'))
-	{
-		Con_ToggleConsole_f();
-		return;
-	}
+    bool specialFlag = Key_isSpecial(key);
+    
+    switch (cls.key_dest)
+    {
+    default:
+        break;
+        
+    /* Chat */
+    case key_message:
+        if (specialOnlyFlag == specialFlag)
+            Key_Message(key);
+        break;
 
-	switch (cls.key_dest)
-	{
-	/* Chat */
-	case key_message:
-		Key_Message(key);
-		break;
+    /* Menu */
+    case key_menu:
+        if (specialOnlyFlag)
+        {
+            if (specialFlag)
+                M_Keydown(key, key);
+            else
+                M_Keydown(-1, key); // Because it will be processed by Char_event() (and so must not be processed twice) but also needed by MenuKey for binding.
+        }
+        else
+        {
+            if (!specialFlag)
+                M_Keydown(key, -1);
+        }
+        break;
 
-	/* Menu */
-	case key_menu:
-		M_Keydown(key);
-		break;
+    /* Console */
+    case key_console:
+        if (specialOnlyFlag == specialFlag)
+            Key_Console(key);
+        break;
 
-	/* Console */
-	case key_console:
-		Key_Console(key);
-		break;
-
-	/* Console is really open but key_dest is game anyway (not connected) */
-	case key_game:
-		if (cls.state == ca_disconnected || cls.state == ca_connecting)
-			Key_Console(key);
-
-		break;
-
-	default:
-		break;
-	}
+    /* Console is really open but key_dest is game anyway (not connected) */
+    case key_game:
+        if (cls.state == ca_disconnected || cls.state == ca_connecting)
+        {
+            if (specialOnlyFlag == specialFlag)
+                Key_Console(key);
+        }
+        break;
+    }
 }
+
+#if defined(__GCW_ZERO__)
+static Key_checkHarwiredCheats(int key)
+{
+    // Cheats for GCW Zero.
+    if (keydown[K_GAMEPAD_LOCK])
+    {
+        extern cvar_t *gl_drawworld;
+        extern cvar_t *gl_lightmap;
+        switch (key)
+        {
+        case K_GAMEPAD_START:
+            Cbuf_AddText("cheats 1\n");
+            return;
+
+        case K_GAMEPAD_LEFT:
+            Cbuf_AddText("notarget\n");
+            return;
+
+        case K_GAMEPAD_RIGHT:
+            Cbuf_AddText("give all\n");
+            return;
+
+        case K_GAMEPAD_DOWN:
+            Cbuf_AddText("noclip\n");
+            return;
+
+        case K_GAMEPAD_UP:
+            Cbuf_AddText("god\n");
+            return;
+
+        case K_GAMEPAD_L:
+            if (gl_drawworld->value == 0)
+                Cbuf_AddText("gl_drawworld 1\n");
+            else
+                Cbuf_AddText("gl_drawworld 0\n");
+            return;
+
+        case K_GAMEPAD_R:
+            if (gl_lightmap->value == 0)
+                Cbuf_AddText("gl_lightmap 1\n");
+            else
+                Cbuf_AddText("gl_lightmap 0\n");
+            return;
+        }
+    }
+}
+#endif
 
 /*
  * Called every frame for every detected keypress.
  * This is only for movement and special characters,
  * anything else is handled by Char_Event().
  */
-void Key_Event(int key, qboolean down, qboolean special)
+void Key_Event(int key, bool down)
 {
 	char cmd[1024];
-	char *kb;
 	unsigned int time = Sys_Milliseconds();
 
 	/* Track if key is down */
 	keydown[key] = down;
 
-	/* Ignore most autorepeats */
 	if (down)
 	{
 		key_repeats[key]++;
-
-		if (
-		        (key != K_BACKSPACE) &&
-		        (key != K_PAUSE) &&
-		        (key != K_PGUP) &&
-		        (key != K_PGDN) &&
-		        (key_repeats[key] > 1))
-		{
-			return;
-		}
+        if (key_repeats[key] > 1)
+        {
+            if (cls.key_dest == key_game && cls.state == ca_active)
+                return; // Ignore autorepeats in-game.
+        }
 	}
 	else
 	{
@@ -1005,39 +979,19 @@ void Key_Event(int key, qboolean down, qboolean special)
 	// Fullscreen switch through Alt + Return.
 	if (down && keydown[K_ALT] && key == K_ENTER)
 	{
-		cvar_t *fullscreen = Cvar_Get("vid_fullscreen", NULL, 0);
-		if (!fullscreen->value)
-		{
-			fullscreen->value = 1;
-			fullscreen->modified = true;
-		}
-		else
-		{
-			fullscreen->value = 0;
-			fullscreen->modified = true;
-		}
-
+        VID_toggleFullScreen();
 		return;
 	}
 
-	// Toogle console though Shift + Escape.
+	// Toggle console though Shift + Escape.
 	if (down && keydown[K_SHIFT] && key == K_ESCAPE)
 	{
 		Con_ToggleConsole_f();
 		return;
 	}
 
-	#if !defined(__GCW_ZERO__)
-	/* Key is unbound */
-	if ((key >= 200) && !keybindings[key] && (cls.key_dest != key_console))
-	{
-		Com_Printf("%s is unbound, hit F4 to set.\n", Key_KeynumToString(key));
-	}
-	#endif
-
-	/* While in attract loop all keys besides F1 to F12 (to
-	       allow quick load and the like) are treated like escape. */
-	if (cl.attractloop && (cls.key_dest != key_menu) && !((key >= K_F1) && (key <= K_F12)))
+	// While in attract loop all keys besides F1 to F12 (to allow quick load and the like) are treated like escape.
+	if (cl.attractloop && (cls.key_dest != key_menu) && !(key >= K_F1 && key <= K_F12))
 	{
 		key = K_ESCAPE;
 	}
@@ -1058,8 +1012,7 @@ void Key_Event(int key, qboolean down, qboolean special)
 				return;
 
 			/* Close the help computer */
-			if (cl.frame.playerstate.stats[STAT_LAYOUTS] &&
-			    (cls.key_dest == key_game))
+			if (cl.frame.playerstate.stats[STAT_LAYOUTS] && (cls.key_dest == key_game))
 			{
 				Cbuf_AddText("cmd putaway\n");
 				return;
@@ -1074,11 +1027,10 @@ void Key_Event(int key, qboolean down, qboolean special)
 
 			/* Close menu or one layer up */
 			case key_menu:
-				M_Keydown(key);
+				M_Keydown(key, -1);
 				break;
 
-			/* Pause game and / or leave console,
-			   break into the menu. */
+			/* Pause game and / or leave console, break into the menu. */
 			case key_game:
 			case key_console:
 				MenuMain_enter();
@@ -1089,48 +1041,8 @@ void Key_Event(int key, qboolean down, qboolean special)
 		}
 
 		#if defined(__GCW_ZERO__)
-		// Cheats for GCW Zero.
-		if (keydown[K_GAMEPAD_LOCK] && down)
-		{
-			extern cvar_t *gl_drawworld;
-			extern cvar_t *gl_lightmap;
-			switch (key)
-			{
-			case K_GAMEPAD_START:
-				Cbuf_AddText("cheats 1\n");
-				return;
-
-			case K_GAMEPAD_LEFT:
-				Cbuf_AddText("notarget\n");
-				return;
-
-			case K_GAMEPAD_RIGHT:
-				Cbuf_AddText("give all\n");
-				return;
-
-			case K_GAMEPAD_DOWN:
-				Cbuf_AddText("noclip\n");
-				return;
-
-			case K_GAMEPAD_UP:
-				Cbuf_AddText("god\n");
-				return;
-
-			case K_GAMEPAD_L:
-				if (gl_drawworld->value == 0)
-					Cbuf_AddText("gl_drawworld 1\n");
-				else
-					Cbuf_AddText("gl_drawworld 0\n");
-				return;
-
-			case K_GAMEPAD_R:
-				if (gl_lightmap->value == 0)
-					Cbuf_AddText("gl_lightmap 1\n");
-				else
-					Cbuf_AddText("gl_lightmap 0\n");
-				return;
-			}
-		}
+        if (down)
+            Key_checkHarwiredCheats(key);
 		#endif
 	}
 
@@ -1156,18 +1068,13 @@ void Key_Event(int key, qboolean down, qboolean special)
 	if (down)
 	{
 		if (key_repeats[key] == 1)
-		{
 			anykeydown++;
-		}
 	}
 	else
 	{
 		anykeydown--;
-
 		if (anykeydown < 0)
-		{
 			anykeydown = 0;
-		}
 	}
 
 	/* key up events only generate commands if the game key binding
@@ -1177,25 +1084,22 @@ void Key_Event(int key, qboolean down, qboolean special)
 	   kenum as a parameter, so multiple downs can be matched with ups */
 	if (!down)
 	{
-		kb = keybindings[key];
-
+        char *kb = keybindings[key];
 		if (kb && (kb[0] == '+'))
 		{
 			Com_sprintf(cmd, sizeof(cmd), "-%s %i %i\n", kb + 1, key, time);
 			Cbuf_AddText(cmd);
 		}
-
 		return;
 	}
-	else
-	if (
+    
+    if (
 	        ((cls.key_dest == key_menu) && menubound[key]) ||
 	        ((cls.key_dest == key_console) && !consolekeys[key]) ||
-	        ((cls.key_dest == key_game) && ((cls.state == ca_active) || !consolekeys[key]))
+	        ((cls.key_dest == key_game) && (cls.state == ca_active || !consolekeys[key]))
 	        )
 	{
-		kb = keybindings[key];
-
+		char *kb = keybindings[key];
 		if (kb)
 		{
 			if (kb[0] == '+')
@@ -1210,43 +1114,10 @@ void Key_Event(int key, qboolean down, qboolean special)
 				Cbuf_AddText("\n");
 			}
 		}
-
 		return;
 	}
 
-	/* All input subsystems handled after this
-	   point only care for key down events. */
-	if (!down)
-	{
-		return;
-	}
-
-	/* Everything that's not a special char
-	   is processed by Char_Event(). */
-	if (!special)
-	{
-		return;
-	}
-
-	/* Send key to the active input subsystem */
-	switch (cls.key_dest)
-	{
-	/* Chat */
-	case key_message:
-		Key_Message(key);
-		break;
-
-	/* Menu */
-	case key_menu:
-		M_Keydown(key);
-		break;
-
-	/* Console */
-	case key_game:
-	case key_console:
-		Key_Console(key);
-		break;
-	}
+    Char_Event(key, true);
 }
 
 /*
@@ -1254,9 +1125,7 @@ void Key_Event(int key, qboolean down, qboolean special)
  */
 void Key_MarkAllUp()
 {
-	int key;
-
-	for (key = 0; key < K_LAST; key++)
+	for (int key = 0; key < K_LAST; key++)
 	{
 		key_repeats[key] = 0;
 		keydown[key] = 0;

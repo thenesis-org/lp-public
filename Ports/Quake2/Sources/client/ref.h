@@ -159,7 +159,6 @@ void R_RenderFrame(refdef_t *fd);
 void R_BeginRegistration(char *map);
 void R_EndRegistration();
 
-void R_Clear(int eyeFrame);
 struct model_s* R_RegisterModel(char *name);
 struct image_s* R_RegisterSkin(char *name);
 void R_SetSky(char *name, float rotate, vec3_t axis);

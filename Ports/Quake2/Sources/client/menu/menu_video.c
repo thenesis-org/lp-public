@@ -38,8 +38,6 @@ static menuframework_s MenuVideo_menu;
 
 static void MenuVideo_init();
 static void MenuVideo_apply();
-static void MenuVideo_draw();
-static const char* MenuVideo_key(int key);
 
 qboolean MenuVideo_restartNeeded;
 
@@ -729,9 +727,9 @@ static void MenuVideo_draw()
 	Menu_Draw(&MenuVideo_menu);
 }
 
-static const char* MenuVideo_key(int key)
+static const char* MenuVideo_key(int key, int keyUnmodified)
 {
-	return Default_MenuKey(&MenuVideo_menu, key);
+	return Default_MenuKey(&MenuVideo_menu, key, keyUnmodified);
 }
 
 void MenuVideo_enter()

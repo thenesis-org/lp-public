@@ -131,7 +131,7 @@ static void LoadGame_MenuDraw(void)
 	Menu_Draw(&s_loadgame_menu);
 }
 
-static const char* LoadGame_MenuKey(int key)
+static const char* LoadGame_MenuKey(int key, int keyUnmodified)
 {
 	static menuframework_s *m = &s_loadgame_menu;
 
@@ -171,7 +171,7 @@ static const char* LoadGame_MenuKey(int key)
 		break;
 	}
 
-	return Default_MenuKey(m, key);
+	return Default_MenuKey(m, key, keyUnmodified);
 }
 
 void MenuLoadGame_enter()
@@ -241,7 +241,7 @@ static void SaveGame_MenuInit(void)
 	Menu_SetStatusBar(&s_savegame_menu, m_loadsave_statusbar);
 }
 
-static const char* SaveGame_MenuKey(int key)
+static const char* SaveGame_MenuKey(int key, int keyUnmodified)
 {
 	static menuframework_s *m = &s_savegame_menu;
 
@@ -287,7 +287,7 @@ static const char* SaveGame_MenuKey(int key)
 		break;
 	}
 
-	return Default_MenuKey(m, key);
+	return Default_MenuKey(m, key, keyUnmodified);
 }
 
 void MenuSaveGame_enter()

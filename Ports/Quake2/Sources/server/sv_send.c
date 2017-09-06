@@ -497,7 +497,7 @@ qboolean SV_RateDrop(client_t *c)
 	return false;
 }
 
-void SV_SendClientMessages(void)
+void SV_SendClientMessages()
 {
 	int i;
 	client_t *c;

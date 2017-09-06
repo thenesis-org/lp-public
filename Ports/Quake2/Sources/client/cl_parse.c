@@ -803,7 +803,7 @@ void CL_ParseFrame(void)
 	}
 }
 
-void CL_ParseServerData(void)
+void CL_ParseServerData()
 {
 	extern cvar_t *fs_gamedirvar;
 	char *str;

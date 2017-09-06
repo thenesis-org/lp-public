@@ -12,31 +12,16 @@ static menulist_s s_allow_download_sounds_box;
 static void DownloadCallback(void *self)
 {
 	menulist_s *f = (menulist_s *)self;
-
 	if (f == &s_allow_download_box)
-	{
 		Cvar_SetValue("allow_download", (float)f->curvalue);
-	}
-	else
-	if (f == &s_allow_download_maps_box)
-	{
+	else if (f == &s_allow_download_maps_box)
 		Cvar_SetValue("allow_download_maps", (float)f->curvalue);
-	}
-	else
-	if (f == &s_allow_download_models_box)
-	{
+	else if (f == &s_allow_download_models_box)
 		Cvar_SetValue("allow_download_models", (float)f->curvalue);
-	}
-	else
-	if (f == &s_allow_download_players_box)
-	{
+	else if (f == &s_allow_download_players_box)
 		Cvar_SetValue("allow_download_players", (float)f->curvalue);
-	}
-	else
-	if (f == &s_allow_download_sounds_box)
-	{
+	else if (f == &s_allow_download_sounds_box)
 		Cvar_SetValue("allow_download_sounds", (float)f->curvalue);
-	}
 }
 
 static void DownloadOptions_MenuInit()
@@ -113,9 +98,7 @@ static void DownloadOptions_MenuInit()
 
 	/* skip over title */
 	if (s_downloadoptions_menu.cursor == 0)
-	{
 		s_downloadoptions_menu.cursor = 1;
-	}
 }
 
 static void DownloadOptions_MenuDraw()
@@ -123,9 +106,9 @@ static void DownloadOptions_MenuDraw()
 	Menu_Draw(&s_downloadoptions_menu);
 }
 
-static const char* DownloadOptions_MenuKey(int key)
+static const char* DownloadOptions_MenuKey(int key, int keyUnmodified)
 {
-	return Default_MenuKey(&s_downloadoptions_menu, key);
+	return Default_MenuKey(&s_downloadoptions_menu, key, keyUnmodified);
 }
 
 void MenuDownloadOptions_enter()

@@ -50,7 +50,7 @@ typedef struct cmdalias_s
 char retval[256];
 int alias_count; /* for detecting runaway loops */
 cmdalias_t *cmd_alias;
-qboolean cmd_wait;
+static qboolean cmd_wait;
 static int cmd_argc;
 static int cmd_argc;
 static char *cmd_argv[MAX_STRING_TOKENS];
@@ -346,7 +346,7 @@ qboolean Cbuf_AddLateCommands(void)
 	return ret;
 }
 
-void Cmd_Exec_f(void)
+void Cmd_Exec_f()
 {
 	char *f, *f2;
 	int len;

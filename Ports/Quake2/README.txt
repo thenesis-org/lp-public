@@ -42,6 +42,5 @@ TODO
 - Add auto-aiming when using a stick. A possibility is to select targets successively by pressing a button, then auto-aim with another button.
 - Implement GLES 2.0 version. This will allow to use buffers for meshes and to lerp between frames in the shader.
 - Remove mesh optimization. This is not necessary with current hardware, just perform a quick indexing.
-- Avoid multiple lightmap texture updates in the same frame, this causes huge slowdowns on Raspberry Pi and Creator CI20, and glitches on GCW Zero.
 - Add "modifier" keys/buttons so that we can use the same button for several actions when modifiers are pressed.
 - Add more command bindings in the key menu. This is useful for targets without keyboard and for some not well documented commands.

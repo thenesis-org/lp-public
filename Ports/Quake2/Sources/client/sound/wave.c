@@ -27,13 +27,13 @@
 #include "client/client.h"
 #include "client/sound/local.h"
 
-byte *data_p;
-byte *iff_end;
-byte *last_chunk;
-byte *iff_data;
-int iff_chunk_len;
+static byte *data_p;
+static byte *iff_end;
+static byte *last_chunk;
+static byte *iff_data;
+static int iff_chunk_len;
 
-short GetLittleShort(void)
+static short GetLittleShort()
 {
 	short val = 0;
 
@@ -43,7 +43,7 @@ short GetLittleShort(void)
 	return val;
 }
 
-int GetLittleLong(void)
+static int GetLittleLong()
 {
 	int val = 0;
 
@@ -55,7 +55,7 @@ int GetLittleLong(void)
 	return val;
 }
 
-void FindNextChunk(char *name)
+static void FindNextChunk(char *name)
 {
 	while (1)
 	{
@@ -86,7 +86,7 @@ void FindNextChunk(char *name)
 	}
 }
 
-void FindChunk(char *name)
+static void FindChunk(char *name)
 {
 	last_chunk = iff_data;
 	FindNextChunk(name);

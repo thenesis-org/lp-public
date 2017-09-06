@@ -122,13 +122,13 @@ extern float LittleFloat(float l);
 
 /* ================================================================== */
 
-int COM_Argc(void);
+int COM_Argc();
 char* COM_Argv(int arg); /* range and null checked */
 void COM_ClearArgv(int arg);
 int COM_CheckParm(char *parm);
 void COM_AddParm(char *parm);
 
-void COM_Init(void);
+void COM_Init();
 void COM_InitArgv(int argc, char **argv);
 
 char* CopyString(char *in);
@@ -348,7 +348,7 @@ void Cbuf_InsertFromDefer(void);
 
 typedef void (*xcommand_t)(void);
 
-void Cmd_Init(void);
+void Cmd_Init();
 
 void Cmd_AddCommand(char *cmd_name, xcommand_t function);
 
@@ -368,9 +368,9 @@ char* Cmd_CompleteCommand(char *partial);
 /* attempts to match a partial command for automatic command line completion */
 /* returns NULL if nothing fits */
 
-int Cmd_Argc(void);
+int Cmd_Argc();
 char* Cmd_Argv(int arg);
-char* Cmd_Args(void);
+char* Cmd_Args();
 
 /* The functions that execute commands get their parameters with these */
 /* functions. Cmd_Argv () will return an empty string, not a NULL */
@@ -660,7 +660,6 @@ void FS_SetGamedir(char *dir);
 char* FS_Gamedir();
 char* FS_WritableGamedir();
 char* FS_NextPath(char *prevpath);
-void FS_ExecAutoexec();
 int FS_LoadFile(char *path, void **buffer);
 
 /* a null buffer will just return the file length without loading */
@@ -717,9 +716,6 @@ void* Z_Malloc(int size); /* returns 0 filled memory */
 void* Z_TagMalloc(int size, int tag);
 void Z_FreeTags(int tag);
 
-void Qcommon_Init(int argc, char **argv);
-void Qcommon_Frame(int msec);
-
 #define NUMVERTEXNORMALS 162
 extern vec3_t bytedirs[NUMVERTEXNORMALS];
 
@@ -729,14 +725,18 @@ void SCR_DebugGraph(float value, int color);
 /* NON-PORTABLE OSTYPE SERVICES */
 
 void Sys_Init();
-void Sys_UnloadGame();
-void* Sys_GetGameAPI(void *parms);
+void Sys_Quit();
+void Sys_Error(char *error, ...);
+void Sys_Sleep(int ms);
 
 char* Sys_ConsoleInput();
 void Sys_ConsoleOutput(char *string);
 void Sys_SendKeyEvents();
-void Sys_Error(char *error, ...);
-void Sys_Quit();
+
+void Sys_UnloadGame();
+void* Sys_GetGameAPI(void *parms);
+
+void Sys_GetExecutablePath(char * exePath, int maxLength);
 char* Sys_GetHomeDir();
 const char* Sys_GetBinaryDir();
 
@@ -756,5 +756,7 @@ void SCR_BeginLoadingPlaque();
 void SV_Init();
 void SV_Shutdown(char *finalmsg, qboolean reconnect);
 void SV_Frame(int msec);
+
+void Qcommon_Run(int argc, char **argv);
 
 #endif

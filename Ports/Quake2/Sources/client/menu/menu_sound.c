@@ -310,14 +310,14 @@ static void MenuSound_draw()
 	M_Popup();
 }
 
-static const char* MenuSound_key(int key)
+static const char* MenuSound_key(int key, int keyUnmodified)
 {
 	if (m_popup_string)
 	{
 		m_popup_string = NULL;
 		return NULL;
 	}
-	return Default_MenuKey(&MenuSound_menu, key);
+	return Default_MenuKey(&MenuSound_menu, key, keyUnmodified);
 }
 
 void MenuSound_enter()

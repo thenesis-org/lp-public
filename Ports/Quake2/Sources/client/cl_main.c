@@ -26,16 +26,16 @@
  */
 
 #include "client/client.h"
-#include "backends/generic/input.h"
+#include "backends/input.h"
 
-void CL_ForwardToServer_f(void);
-void CL_Changing_f(void);
-void CL_Reconnect_f(void);
-void CL_Connect_f(void);
-void CL_Rcon_f(void);
-void CL_CheckForResend(void);
+void CL_ForwardToServer_f();
+void CL_Changing_f();
+void CL_Reconnect_f();
+void CL_Connect_f();
+void CL_Rcon_f();
+void CL_CheckForResend();
 
-cvar_t *freelook;
+cvar_t *input_freelook;
 
 cvar_t *adr0;
 cvar_t *adr1;
@@ -70,20 +70,6 @@ cvar_t *cl_showclamp;
 cvar_t *cl_paused;
 cvar_t *cl_timedemo;
 
-cvar_t *lookspring;
-cvar_t *lookstrafe;
-cvar_t *sensitivity;
-
-cvar_t *joystick_enabled;
-cvar_t *stick_sensitivity;
-cvar_t *stick_curve;
-cvar_t *stick_deadzone;
-
-cvar_t *m_pitch;
-cvar_t *m_yaw;
-cvar_t *m_forward;
-cvar_t *m_side;
-
 cvar_t *cl_lightlevel;
 
 /* userinfo */
@@ -94,7 +80,6 @@ cvar_t *skin;
 cvar_t *rate;
 cvar_t *fov;
 cvar_t *horplus;
-cvar_t *windowed_mouse;
 cvar_t *msg;
 cvar_t *hand;
 cvar_t *gender;
@@ -118,7 +103,7 @@ extern cvar_t *allow_download_maps;
 /*
  * Dumps the current net message, prefixed by the length
  */
-void CL_WriteDemoMessage(void)
+void CL_WriteDemoMessage()
 {
 	int len, swlen;
 
@@ -132,7 +117,7 @@ void CL_WriteDemoMessage(void)
 /*
  * stop recording a demo
  */
-void CL_Stop_f(void)
+void CL_Stop_f()
 {
 	int len;
 
@@ -155,7 +140,7 @@ void CL_Stop_f(void)
  * record <demoname>
  * Begins recording a demo from the current position
  */
-void CL_Record_f(void)
+void CL_Record_f()
 {
 	char name[MAX_OSPATH];
 	byte buf_data[MAX_MSGLEN];
@@ -269,7 +254,7 @@ void CL_Record_f(void)
 	fwrite(buf.data, buf.cursize, 1, cls.demofile);
 }
 
-void CL_Setenv_f(void)
+static void CL_Setenv_f()
 {
 	#if 1
 	Com_Printf("setenv not implemented on this platform\n");
@@ -309,25 +294,40 @@ void CL_Setenv_f(void)
 	#endif
 }
 
-void CL_Pause_f(void)
+void CL_Pause(bool pauseFlag)
 {
-	/* never pause in multiplayer */
+    /* never pause in multiplayer */
 	if ((Cvar_VariableValue("maxclients") > 1) || !Com_ServerState())
 	{
-		Cvar_SetValue("paused", 0);
-		return;
+        pauseFlag = false;
 	}
 
-	Cvar_SetValue("paused", !cl_paused->value);
+	Cvar_SetValue("paused", pauseFlag);
 }
 
-void CL_Quit_f(void)
+static void CL_PauseOn()
+{
+    CL_Pause(true);
+}
+
+static void CL_PauseOff()
+{
+    CL_Pause(false);
+}
+
+static void CL_TogglePause_f()
+{
+    bool pauseFlag = !cl_paused->value;
+    CL_Pause(pauseFlag);
+}
+
+void CL_Quit_f()
 {
 	CL_Disconnect();
 	Com_Quit();
 }
 
-void CL_ClearState(void)
+void CL_ClearState()
 {
 	S_StopAllSounds();
 	CL_ClearEffects();
@@ -343,12 +343,9 @@ void CL_ClearState(void)
 /*
  * Handle a reply from a ping
  */
-void CL_ParseStatusMessage(void)
+void CL_ParseStatusMessage()
 {
-	char *s;
-
-	s = MSG_ReadString(&net_message);
-
+	char *s = MSG_ReadString(&net_message);
 	Com_Printf("%s\n", s);
 	M_AddToServerList(net_from, s);
 }
@@ -356,10 +353,9 @@ void CL_ParseStatusMessage(void)
 /*
  * Load or download any custom player skins and models
  */
-void CL_Skins_f(void)
+static void CL_Skins_f()
 {
 	int i;
-
 	for (i = 0; i < MAX_CLIENTS; i++)
 	{
 		if (!cl.configstrings[CS_PLAYERSKINS + i][0])
@@ -378,7 +374,7 @@ void CL_Skins_f(void)
 }
 
 /* This fixes some problems with wrong tagged models and skins */
-void CL_FixUpGender(void)
+void CL_FixUpGender()
 {
 	char *p;
 	char sk[80];
@@ -417,7 +413,7 @@ void CL_FixUpGender(void)
 	}
 }
 
-void CL_Userinfo_f(void)
+static void CL_Userinfo_f()
 {
 	Com_Printf("User info settings:\n");
 	Info_Print(Cvar_Userinfo());
@@ -427,7 +423,7 @@ void CL_Userinfo_f(void)
  * Restart the sound subsystem so it can pick up
  * new parameters and flush all sounds
  */
-void CL_Snd_Restart_f(void)
+void CL_Snd_Restart_f()
 {
 	S_Shutdown();
 	S_Init();
@@ -445,7 +441,7 @@ byte *precache_model;
  * The server will send this command right
  * before allowing the client into the server
  */
-void CL_Precache_f(void)
+static void CL_Precache_f()
 {
 	/* Yet another hack to let old demos work */
 	if (Cmd_Argc() < 2)
@@ -467,7 +463,7 @@ void CL_Precache_f(void)
 	CL_RequestNextDownload();
 }
 
-void CL_InitLocal(void)
+static void CL_InitLocal()
 {
 	cls.state = ca_disconnected;
 	cls.realtime = Sys_Milliseconds();
@@ -499,33 +495,13 @@ void CL_InitLocal(void)
 	cl_maxfps = Cvar_Get("cl_maxfps", "95", CVAR_ARCHIVE);
 	cl_drawfps = Cvar_Get("cl_drawfps", "0", CVAR_ARCHIVE);
 
-	cl_upspeed = Cvar_Get("cl_upspeed", "200", 0);
-	cl_forwardspeed = Cvar_Get("cl_forwardspeed", "200", 0);
-	cl_sidespeed = Cvar_Get("cl_sidespeed", "200", 0);
-	cl_yawspeed = Cvar_Get("cl_yawspeed", "140", 0);
-	cl_pitchspeed = Cvar_Get("cl_pitchspeed", "150", 0);
+	cl_speed_up = Cvar_Get("cl_speed_up", "200", 0);
+	cl_speed_forward = Cvar_Get("cl_speed_forward", "200", 0);
+	cl_speed_side = Cvar_Get("cl_speed_side", "200", 0);
+	cl_speed_yaw = Cvar_Get("cl_speed_yaw", "140", 0);
+	cl_speed_pitch = Cvar_Get("cl_speed_pitch", "150", 0);
 	cl_anglespeedkey = Cvar_Get("cl_anglespeedkey", "1.5", 0);
-
 	cl_run = Cvar_Get("cl_run", "0", CVAR_ARCHIVE);
-	freelook = Cvar_Get("freelook", "1", CVAR_ARCHIVE);
-	lookspring = Cvar_Get("lookspring", "0", CVAR_ARCHIVE);
-	lookstrafe = Cvar_Get("lookstrafe", "0", CVAR_ARCHIVE);
-	sensitivity = Cvar_Get("sensitivity", "3", CVAR_ARCHIVE);
-
-	#if defined(__unix__) && !defined(__GCW_ZERO__)
-	// There is some issues with the joystick under Linux. So disable it by default (it works for GCW Zero and it is needed for this platform).
-	joystick_enabled = Cvar_Get("joystick_enabled", "0", CVAR_ARCHIVE);
-	#else
-	joystick_enabled = Cvar_Get("joystick_enabled", "1", CVAR_ARCHIVE);
-	#endif
-	stick_sensitivity = Cvar_Get("stick_sensitivity", "1", CVAR_ARCHIVE);
-	stick_curve = Cvar_Get("stick_curve", "1", CVAR_ARCHIVE);
-	stick_deadzone = Cvar_Get("stick_deadzone", "0.2", CVAR_ARCHIVE);
-
-	m_pitch = Cvar_Get("m_pitch", "0.022", CVAR_ARCHIVE);
-	m_yaw = Cvar_Get("m_yaw", "0.022", 0);
-	m_forward = Cvar_Get("m_forward", "1", 0);
-	m_side = Cvar_Get("m_side", "1", 0);
 
 	cl_shownet = Cvar_Get("cl_shownet", "0", 0);
 	cl_showmiss = Cvar_Get("cl_showmiss", "0", 0);
@@ -544,12 +520,11 @@ void CL_InitLocal(void)
 	info_spectator = Cvar_Get("spectator", "0", CVAR_USERINFO);
 	name = Cvar_Get("name", "unnamed", CVAR_USERINFO | CVAR_ARCHIVE);
 	skin = Cvar_Get("skin", "male/grunt", CVAR_USERINFO | CVAR_ARCHIVE);
-	rate = Cvar_Get("rate", "8000", CVAR_USERINFO | CVAR_ARCHIVE);
+	rate = Cvar_Get("rate", "32768", CVAR_USERINFO | CVAR_ARCHIVE);
 	msg = Cvar_Get("msg", "1", CVAR_USERINFO | CVAR_ARCHIVE);
 	hand = Cvar_Get("hand", "0", CVAR_USERINFO | CVAR_ARCHIVE);
 	fov = Cvar_Get("fov", "90", CVAR_USERINFO | CVAR_ARCHIVE);
 	horplus = Cvar_Get("horplus", "1", CVAR_ARCHIVE);
-	windowed_mouse = Cvar_Get("windowed_mouse", "1", CVAR_USERINFO | CVAR_ARCHIVE);
 	gender = Cvar_Get("gender", "male", CVAR_USERINFO | CVAR_ARCHIVE);
 	gender_auto = Cvar_Get("gender_auto", "1", CVAR_ARCHIVE);
 	gender->modified = false;
@@ -558,7 +533,9 @@ void CL_InitLocal(void)
 
 	/* register our commands */
 	Cmd_AddCommand("cmd", CL_ForwardToServer_f);
-	Cmd_AddCommand("pause", CL_Pause_f);
+	Cmd_AddCommand("togglepause", CL_TogglePause_f);
+	Cmd_AddCommand("+pause", CL_PauseOn);
+	Cmd_AddCommand("-pause", CL_PauseOff);
 	Cmd_AddCommand("pingservers", CL_PingServers_f);
 	Cmd_AddCommand("skins", CL_Skins_f);
 
@@ -609,7 +586,7 @@ void CL_InitLocal(void)
 }
 
 /*
- * Writes key bindings and archived cvars to config.cfg
+ * Writes key bindings and archived cvars to user.cfg
  */
 static void CL_WriteConfiguration()
 {
@@ -621,13 +598,12 @@ static void CL_WriteConfiguration()
 		return;
 	}
 
-	Com_sprintf(path, sizeof(path), "%s/config.cfg", FS_WritableGamedir());
+	Com_sprintf(path, sizeof(path), "%s/user.cfg", FS_WritableGamedir());
 
 	f = fopen(path, "w");
-
 	if (!f)
 	{
-		Com_Printf("Couldn't write config.cfg.\n");
+		Com_Printf("Couldn't write user.cfg.\n");
 		return;
 	}
 
@@ -662,24 +638,20 @@ cheatvar_t cheatvars[] =
 
 int numcheatvars;
 
-void CL_FixCvarCheats(void)
+void CL_FixCvarCheats()
 {
 	int i;
 	cheatvar_t *var;
 
-	if (!strcmp(cl.configstrings[CS_MAXCLIENTS], "1") ||
-	    !cl.configstrings[CS_MAXCLIENTS][0])
-	{
+	if (!strcmp(cl.configstrings[CS_MAXCLIENTS], "1") || !cl.configstrings[CS_MAXCLIENTS][0])
 		return; /* single player can cheat  */
-	}
 
 	/* find all the cvars if we haven't done it yet */
 	if (!numcheatvars)
 	{
 		while (cheatvars[numcheatvars].name)
 		{
-			cheatvars[numcheatvars].var = Cvar_Get(cheatvars[numcheatvars].name,
-					cheatvars[numcheatvars].value, 0);
+			cheatvars[numcheatvars].var = Cvar_Get(cheatvars[numcheatvars].name, cheatvars[numcheatvars].value, 0);
 			numcheatvars++;
 		}
 	}
@@ -697,30 +669,24 @@ void CL_FixCvarCheats(void)
 static void CL_UpdateWindowedMouse()
 {
 	if (cls.disable_screen)
-	{
 		return;
-	}
 
 	if (cls.key_dest == key_menu || cls.key_dest == key_console ||
 	    (cls.key_dest == key_game && (cls.state != ca_active || !cl.refresh_prepped)))
 	{
-		if (windowed_mouse->value)
-		{
-			Cvar_SetValue("windowed_mouse", 0);
-		}
+		if (mouse_windowed->value)
+			Cvar_SetValue("mouse_windowed", 0);
 	}
 	else
 	{
-		if (!windowed_mouse->value)
-		{
-			Cvar_SetValue("windowed_mouse", 1);
-		}
+		if (!mouse_windowed->value)
+			Cvar_SetValue("mouse_windowed", 1);
 	}
 }
 
 void CL_SendCommand()
 {
-	/* update windowed_mouse cvar */
+	/* update mouse_windowed cvar */
 	CL_UpdateWindowedMouse();
 
 	/* get new key events */
@@ -745,23 +711,17 @@ void CL_Frame(int msec)
 	static int lasttimecalled;
 
 	if (dedicated->value)
-	{
 		return;
-	}
 
 	extratime += msec;
 
 	if (!cl_timedemo->value)
 	{
 		if ((cls.state == ca_connected) && (extratime < 100))
-		{
 			return; /* don't flood packets out while connecting */
-		}
 
 		if (extratime < 1000 / cl_maxfps->value)
-		{
 			return; /* framerate is too high */
-		}
 	}
 
 	/* decide the simulation time */
@@ -888,8 +848,6 @@ void CL_Init()
 	cls.disable_screen = true; /* don't draw yet */
 
 	CL_InitLocal();
-
-	FS_ExecAutoexec();
 
 	Cbuf_Execute();
 

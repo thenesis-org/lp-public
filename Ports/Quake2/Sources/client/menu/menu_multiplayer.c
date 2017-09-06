@@ -70,9 +70,9 @@ static void Multiplayer_MenuDraw()
 	Menu_Draw(&s_multiplayer_menu);
 }
 
-static const char* Multiplayer_MenuKey(int key)
+static const char* Multiplayer_MenuKey(int key, int keyUnmodified)
 {
-	return Default_MenuKey(&s_multiplayer_menu, key);
+	return Default_MenuKey(&s_multiplayer_menu, key, keyUnmodified);
 }
 
 void MenuMultiplayer_enter()

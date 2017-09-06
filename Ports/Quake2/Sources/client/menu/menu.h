@@ -4,7 +4,7 @@
 #include "client/menu/qmenu.h"
 
 typedef void (*MenuDrawFunc)();
-typedef const char * (*MenuKeyFunc)(int key);
+typedef const char * (*MenuKeyFunc)(int key, int keyUnmodified);
 
 float ClampCvar(float min, float max, float value);
 
@@ -13,7 +13,7 @@ void M_ForceMenuOff();
 void M_PopMenu();
 void M_PushMenu(MenuDrawFunc draw, MenuKeyFunc key);
 
-const char* Default_MenuKey(menuframework_s *m, int key);
+const char* Default_MenuKey(menuframework_s *m, int key, int keyUnmodified);
 void Key_ClearTyping();
 
 extern char *m_popup_string;
