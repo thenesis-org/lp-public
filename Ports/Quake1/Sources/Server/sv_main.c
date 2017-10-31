@@ -205,7 +205,7 @@ void SV_SendServerinfo(client_t *client)
 	char message[2048];
 
 	MSG_WriteByte(&client->message, svc_print);
-	sprintf(message, "%c\nVERSION %4.2f SERVER (%i CRC)", 2, VERSION, pr_crc);
+	sprintf(message, "%c\nVERSION %4.2f SERVER (%i CRC)", 2, QUAKE_HOST_VERSION, pr_crc);
 	MSG_WriteString(&client->message, message);
 
 	MSG_WriteByte(&client->message, svc_serverinfo);
@@ -1024,11 +1024,7 @@ void SV_SaveSpawnparms()
 }
 
 /*
-   ================
-   SV_SpawnServer
-
    This is called at the start of each level
-   ================
  */
 extern float scr_centertime_off;
 
@@ -1049,9 +1045,7 @@ void SV_SpawnServer(char * server)
 	// tell all connected clients that we are going to a new level
 	//
 	if (sv.active)
-	{
 		SV_SendReconnect();
-	}
 
 	//
 	// make cvars consistant
@@ -1073,7 +1067,7 @@ void SV_SpawnServer(char * server)
 
 	memset(&sv, 0, sizeof(sv));
 
-	strcpy(sv.name, server);
+	Q_strncpy(sv.name, server, 64);
 
 	// load progs to get entity field count
 	PR_LoadProgs();
@@ -1108,8 +1102,9 @@ void SV_SpawnServer(char * server)
 
 	sv.time = 1.0;
 
-	strcpy(sv.name, server);
-	sprintf(sv.modelname, "maps/%s.bsp", server);
+	Q_strncpy(sv.name, server, 64);
+	snprintf(sv.modelname, 64, "maps/%s.bsp", server);
+    sv.modelname[63] = 0;
 	sv.worldmodel = Mod_ForName(sv.modelname, false);
 	if (!sv.worldmodel)
 	{

@@ -21,7 +21,7 @@
 #define world_h
 
 #include "Common/mathlib.h"
-#include "Rendering/gl_model.h"
+#include "Rendering/r_model.h"
 #include "Scripting/progs.h"
 
 typedef struct

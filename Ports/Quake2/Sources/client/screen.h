@@ -27,21 +27,21 @@
 #ifndef CL_SCREEN_H
 #define CL_SCREEN_H
 
-void SCR_Init(void);
+void SCR_Init();
 
-void SCR_UpdateScreen(void);
+void SCR_UpdateScreen();
 
-void SCR_SizeUp(void);
-void SCR_SizeDown(void);
+void SCR_SizeUp();
+void SCR_SizeDown();
 void SCR_CenterPrint(char *str);
-void SCR_BeginLoadingPlaque(void);
-void SCR_EndLoadingPlaque(void);
+void SCR_BeginLoadingPlaque();
+void SCR_EndLoadingPlaque();
 
 void SCR_DebugGraph(float value, int color);
 
-void SCR_TouchPics(void);
+void SCR_TouchPics();
 
-void SCR_RunConsole(void);
+void SCR_RunConsole();
 
 extern float scr_con_current;
 extern float scr_conlines; /* lines of console to display */

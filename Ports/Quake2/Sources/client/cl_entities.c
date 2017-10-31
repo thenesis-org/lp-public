@@ -255,19 +255,13 @@ void CL_AddPacketEntities(frame_t *frame)
 
 		/* only used for black hole model right now */
 		if (renderfx & RF_TRANSLUCENT && !(renderfx & RF_BEAM))
-		{
 			ent.alpha = 0.70f;
-		}
 
 		/* render effects (fullbright, translucent, etc) */
 		if ((effects & EF_COLOR_SHELL))
-		{
 			ent.flags = 0; /* renderfx go on color shell entity */
-		}
 		else
-		{
 			ent.flags = renderfx;
-		}
 
 		/* calculate angles */
 		if (effects & EF_ROTATE)
@@ -310,33 +304,22 @@ void CL_AddPacketEntities(frame_t *frame)
 			ent.flags |= RF_VIEWERMODEL;
 
 			if (effects & EF_FLAG1)
-			{
 				V_AddLight(ent.origin, 225, 1.0f, 0.1f, 0.1f);
-			}
 			else
 			if (effects & EF_FLAG2)
-			{
 				V_AddLight(ent.origin, 225, 0.1f, 0.1f, 1.0f);
-			}
 			else
 			if (effects & EF_TAGTRAIL)
-			{
 				V_AddLight(ent.origin, 225, 1.0f, 1.0f, 0.0f);
-			}
 			else
 			if (effects & EF_TRACKERTRAIL)
-			{
 				V_AddLight(ent.origin, 225, -1.0f, -1.0f, -1.0f);
-			}
-
 			continue;
 		}
 
 		/* if set to invisible, skip */
 		if (!s1->modelindex)
-		{
 			continue;
-		}
 
 		if (effects & EF_BFG)
 		{
@@ -353,15 +336,10 @@ void CL_AddPacketEntities(frame_t *frame)
 		if (effects & EF_SPHERETRANS)
 		{
 			ent.flags |= RF_TRANSLUCENT;
-
 			if (effects & EF_TRACKERTRAIL)
-			{
 				ent.alpha = 0.6f;
-			}
 			else
-			{
 				ent.alpha = 0.3f;
-			}
 		}
 
 		/* add to refresh list */
@@ -380,9 +358,7 @@ void CL_AddPacketEntities(frame_t *frame)
 				{
 					/* ditch the half damage shell if any of red, blue, or double are on */
 					if (renderfx & (RF_SHELL_RED | RF_SHELL_BLUE | RF_SHELL_DOUBLE))
-					{
 						renderfx &= ~RF_SHELL_HALF_DAM;
-					}
 				}
 			}
 
@@ -392,15 +368,11 @@ void CL_AddPacketEntities(frame_t *frame)
 				{
 					/* lose the yellow shell if we have a red, blue, or green shell */
 					if (renderfx & (RF_SHELL_RED | RF_SHELL_BLUE | RF_SHELL_GREEN))
-					{
 						renderfx &= ~RF_SHELL_DOUBLE;
-					}
 
 					/* if we have a red shell, turn it to purple by adding blue */
 					if (renderfx & RF_SHELL_RED)
-					{
 						renderfx |= RF_SHELL_BLUE;
-					}
 					/* if we have a blue shell (and not a red shell),
 					   turn it to cyan by adding green */
 					else
@@ -409,13 +381,9 @@ void CL_AddPacketEntities(frame_t *frame)
 						/* go to green if it's on already,
 						   otherwise do cyan (flash green) */
 						if (renderfx & RF_SHELL_GREEN)
-						{
 							renderfx &= ~RF_SHELL_BLUE;
-						}
 						else
-						{
 							renderfx |= RF_SHELL_GREEN;
-						}
 					}
 				}
 			}
@@ -440,29 +408,20 @@ void CL_AddPacketEntities(frame_t *frame)
 				i = (s1->skinnum >> 8); /* 0 is default weapon model */
 
 				if (!cl_vwep->value || (i > MAX_CLIENTWEAPONMODELS - 1))
-				{
 					i = 0;
-				}
 
 				ent.model = ci->weaponmodel[i];
 
 				if (!ent.model)
 				{
 					if (i != 0)
-					{
 						ent.model = ci->weaponmodel[0];
-					}
-
 					if (!ent.model)
-					{
 						ent.model = cl.baseclientinfo.weaponmodel[0];
-					}
 				}
 			}
 			else
-			{
 				ent.model = cl.model_draw[s1->modelindex2];
-			}
 
 			/* check for the defender sphere shell and make it translucent */
 			if (!Q_strcasecmp(cl.configstrings[CS_MODELS + (s1->modelindex2)],
@@ -529,13 +488,9 @@ void CL_AddPacketEntities(frame_t *frame)
 			if (effects & EF_HYPERBLASTER)
 			{
 				if (effects & EF_TRACKER)
-				{
 					V_AddLight(ent.origin, 200, 0, 1, 0);
-				}
 				else
-				{
 					V_AddLight(ent.origin, 200, 1, 1, 0);
-				}
 			}
 			else
 			if (effects & EF_GIB)
@@ -557,7 +512,7 @@ void CL_AddPacketEntities(frame_t *frame)
 			else
 			if (effects & EF_BFG)
 			{
-				static int bfg_lightramp[6] = { 300, 400, 600, 300, 150, 75 };
+				static const short bfg_lightramp[6] = { 300, 400, 600, 300, 150, 75 };
 
 				if (effects & EF_ANIM_ALLFAST)
 				{
@@ -653,32 +608,22 @@ void CL_AddViewWeapon(player_state_t *ps, player_state_t *ops)
 
 	/* allow the gun to be completely removed */
 	if (!cl_gun->value)
-	{
 		return;
-	}
 
 	/* don't draw gun if in wide angle view and drawing not forced */
 	if (ps->fov > 90)
 	{
 		if (cl_gun->value < 2)
-		{
 			return;
-		}
 	}
 
 	if (gun_model)
-	{
 		gun.model = gun_model;
-	}
 	else
-	{
 		gun.model = cl.model_draw[ps->gunindex];
-	}
 
 	if (!gun.model)
-	{
 		return;
-	}
 
 	/* set up gun position */
 	for (i = 0; i < 3; i++)
@@ -697,15 +642,10 @@ void CL_AddViewWeapon(player_state_t *ps, player_state_t *ops)
 	else
 	{
 		gun.frame = ps->gunframe;
-
 		if (gun.frame == 0)
-		{
 			gun.oldframe = 0; /* just changed weapons, don't lerp from old */
-		}
 		else
-		{
 			gun.oldframe = ops->gunframe;
-		}
 	}
 
 	gun.flags = RF_MINLIGHT | RF_DEPTHHACK | RF_WEAPONMODEL;
@@ -738,7 +678,7 @@ static inline float AdaptFov(float fov, float w, float h)
 /*
  * Sets cl.refdef view values
  */
-void CL_CalcViewValues(void)
+void CL_CalcViewValues()
 {
 	int i;
 	float lerp, backlerp, ifov;
@@ -751,9 +691,7 @@ void CL_CalcViewValues(void)
 	oldframe = &cl.frames[i];
 
 	if ((oldframe->serverframe != cl.frame.serverframe - 1) || !oldframe->valid)
-	{
 		oldframe = &cl.frame; /* previous frame was dropped or invalid */
-	}
 
 	ops = &oldframe->playerstate;
 
@@ -766,13 +704,9 @@ void CL_CalcViewValues(void)
 	}
 
 	if (cl_paused->value)
-	{
 		lerp = 1.0f;
-	}
 	else
-	{
 		lerp = cl.lerpfrac;
-	}
 
 	/* calculate the origin */
 	if ((cl_predict->value) && !(cl.frame.playerstate.pmove.pm_flags & PMF_NO_PREDICTION))
@@ -860,12 +794,10 @@ void CL_CalcViewValues(void)
 /*
  * Emits all entities, particles, and lights to the refresh
  */
-void CL_AddEntities(void)
+void CL_AddEntities()
 {
 	if (cls.state != ca_active)
-	{
 		return;
-	}
 
 	if (cl.time > cl.frame.servertime)
 	{
@@ -894,9 +826,7 @@ void CL_AddEntities(void)
 	}
 
 	if (cl_timedemo->value)
-	{
 		cl.lerpfrac = 1.0f;
-	}
 
 	CL_CalcViewValues();
 	CL_AddPacketEntities(&cl.frame);
@@ -911,13 +841,8 @@ void CL_AddEntities(void)
  */
 void CL_GetEntitySoundOrigin(int ent, vec3_t org)
 {
-	centity_t *old;
-
 	if ((ent < 0) || (ent >= MAX_EDICTS))
-	{
 		Com_Error(ERR_DROP, "CL_GetEntitySoundOrigin: bad ent");
-	}
-
-	old = &cl_entities[ent];
+	centity_t *old = &cl_entities[ent];
 	VectorCopy(old->lerp_origin, org);
 }

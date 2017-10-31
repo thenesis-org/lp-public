@@ -19,6 +19,7 @@
  */
 #include "Client/console.h"
 #include "Client/keys.h"
+#include "Client/menu.h"
 #include "Client/screen.h"
 #include "Common/cmd.h"
 #include "Common/sys.h"
@@ -79,11 +80,6 @@ struct
 	unsigned int sequence;
 	byte data[MAX_DATAGRAM];
 } packetBuffer;
-
-extern int m_return_state;
-extern int m_state;
-extern qboolean m_return_onerror;
-extern char m_return_reason[32];
 
 #ifdef DEBUG
 char* StrAddr(struct qsockaddr *addr)

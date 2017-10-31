@@ -351,7 +351,7 @@ void SV_ShutdownGameProgs(void)
 /*
  * Init the game subsystem for a new map
  */
-void SV_InitGameProgs(void)
+void SV_InitGameProgs()
 {
 	game_import_t import;
 
@@ -421,16 +421,14 @@ void SV_InitGameProgs(void)
 	import.AreasConnected = CM_AreasConnected;
 
 	ge = (game_export_t *)Sys_GetGameAPI(&import);
-
 	if (!ge)
 	{
-		Com_Error(ERR_DROP, "failed to load game DLL");
+		Com_Error(ERR_FATAL, "Failed to load game DLL");
 	}
 
 	if (ge->apiversion != GAME_API_VERSION)
 	{
-		Com_Error(ERR_DROP, "game is version %i, not %i", ge->apiversion,
-			GAME_API_VERSION);
+		Com_Error(ERR_FATAL, "The game DLL version is %i whereas is should be %i", ge->apiversion, GAME_API_VERSION);
 	}
 
 	ge->Init();

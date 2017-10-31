@@ -23,7 +23,7 @@
 #include "Common/mathlib.h"
 #include "Common/sys.h"
 #include "Networking/protocol.h"
-#include "Rendering/gl_model.h"
+#include "Rendering/r_model.h"
 #include "Scripting/progs.h"
 #include "Server/server.h"
 #include "Server/world.h"
@@ -49,7 +49,7 @@ char* PF_VarString(int first)
 	out[0] = 0;
 	for (i = first; i < pr_argc; i++)
 	{
-		strcat(out, G_STRING((OFS_PARM0 + i * 3)));
+		Q_strncat(out, G_STRING((OFS_PARM0 + i * 3)), 256);
 	}
 	return out;
 }

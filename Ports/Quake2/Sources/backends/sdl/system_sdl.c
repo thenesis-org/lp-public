@@ -24,8 +24,11 @@
 
 #include <SDL2/SDL.h>
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+
+bool logFileEnabled = false;
 
 unsigned int sys_frame_time;
 static void *game_library = NULL;
@@ -49,8 +52,8 @@ int Sys_Milliseconds()
 
 void Sys_RedirectStdout()
 {
-	char path_stdout[MAX_OSPATH];
-	char path_stderr[MAX_OSPATH];
+	if (!logFileEnabled)
+		return;
 
 	if (dedicated && dedicated->value)
 		return;
@@ -62,9 +65,10 @@ void Sys_RedirectStdout()
 	if (FS_CreatePath(home))
 		return;
 
+	char path_stdout[MAX_OSPATH];
+	char path_stderr[MAX_OSPATH];
 	snprintf(path_stdout, sizeof(path_stdout), "%s/%s", home, "stdout.txt");
 	snprintf(path_stderr, sizeof(path_stderr), "%s/%s", home, "stderr.txt");
-
 	freopen(path_stdout, "w", stdout);
 	freopen(path_stderr, "w", stderr);
 }

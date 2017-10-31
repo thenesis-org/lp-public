@@ -26,6 +26,7 @@
 #include "Common/cvar.h"
 #include "Common/sys.h"
 #include "Common/zone.h"
+#include "Rendering/r_private.h"
 
 #include <string.h>
 
@@ -57,13 +58,39 @@ typedef struct
 	int keynum;
 } keyname_t;
 
+// Translates internal key representations into human readable strings.
 keyname_t keynames[] =
 {
+	{ "SELECT", K_GAMEPAD_SELECT },
+	{ "START", K_GAMEPAD_START },
+
+	{ "LEFT", K_GAMEPAD_LEFT },
+	{ "RIGHT", K_GAMEPAD_RIGHT },
+	{ "DOWN", K_GAMEPAD_DOWN },
+	{ "UP", K_GAMEPAD_UP },
+
+	//    {"A", K_GAMEPAD_A},
+	//    {"B", K_GAMEPAD_B},
+	//    {"X", K_GAMEPAD_X},
+	//    {"Y", K_GAMEPAD_Y},
+
+	//    {"L", K_GAMEPAD_L},
+	//    {"R", K_GAMEPAD_R},
+
+	//    {"LOCK", K_GAMEPAD_LOCK},
+	//    {"PAUSE", K_GAMEPAD_POWER},
+
 	{ "TAB", K_TAB },
 	{ "ENTER", K_ENTER },
 	{ "ESCAPE", K_ESCAPE },
 	{ "SPACE", K_SPACE },
 	{ "BACKSPACE", K_BACKSPACE },
+
+	{ "COMMAND", K_COMMAND },
+	{ "CAPSLOCK", K_CAPSLOCK },
+	{ "POWER", K_POWER },
+	{ "PAUSE", K_PAUSE },
+
 	{ "UPARROW", K_UPARROW },
 	{ "DOWNARROW", K_DOWNARROW },
 	{ "LEFTARROW", K_LEFTARROW },
@@ -96,11 +123,41 @@ keyname_t keynames[] =
 	{ "MOUSE1", K_MOUSE1 },
 	{ "MOUSE2", K_MOUSE2 },
 	{ "MOUSE3", K_MOUSE3 },
+	{ "MOUSE4", K_MOUSE4 },
+	{ "MOUSE5", K_MOUSE5 },
 
 	{ "JOY1", K_JOY1 },
 	{ "JOY2", K_JOY2 },
 	{ "JOY3", K_JOY3 },
 	{ "JOY4", K_JOY4 },
+	{ "JOY5", K_JOY5 },
+	{ "JOY6", K_JOY6 },
+	{ "JOY7", K_JOY7 },
+	{ "JOY8", K_JOY8 },
+	{ "JOY9", K_JOY9 },
+	{ "JOY10", K_JOY10 },
+	{ "JOY11", K_JOY11 },
+	{ "JOY12", K_JOY12 },
+	{ "JOY13", K_JOY13 },
+	{ "JOY14", K_JOY14 },
+	{ "JOY15", K_JOY15 },
+	{ "JOY16", K_JOY16 },
+	{ "JOY17", K_JOY17 },
+	{ "JOY18", K_JOY18 },
+	{ "JOY19", K_JOY19 },
+	{ "JOY20", K_JOY20 },
+	{ "JOY21", K_JOY21 },
+	{ "JOY22", K_JOY22 },
+	{ "JOY23", K_JOY23 },
+	{ "JOY24", K_JOY24 },
+	{ "JOY25", K_JOY25 },
+	{ "JOY26", K_JOY26 },
+	{ "JOY27", K_JOY27 },
+	{ "JOY28", K_JOY28 },
+	{ "JOY29", K_JOY29 },
+	{ "JOY30", K_JOY30 },
+	{ "JOY31", K_JOY31 },
+	{ "JOY32", K_JOY32 },
 
 	{ "AUX1", K_AUX1 },
 	{ "AUX2", K_AUX2 },
@@ -135,12 +192,26 @@ keyname_t keynames[] =
 	{ "AUX31", K_AUX31 },
 	{ "AUX32", K_AUX32 },
 
-	{ "PAUSE", K_PAUSE },
+	{ "KP_HOME", K_KP_HOME },
+	{ "KP_UPARROW", K_KP_UPARROW },
+	{ "KP_PGUP", K_KP_PGUP },
+	{ "KP_LEFTARROW", K_KP_LEFTARROW },
+	{ "KP_5", K_KP_5 },
+	{ "KP_RIGHTARROW", K_KP_RIGHTARROW },
+	{ "KP_END", K_KP_END },
+	{ "KP_DOWNARROW", K_KP_DOWNARROW },
+	{ "KP_PGDN", K_KP_PGDN },
+	{ "KP_ENTER", K_KP_ENTER },
+	{ "KP_INS", K_KP_INS },
+	{ "KP_DEL", K_KP_DEL },
+	{ "KP_SLASH", K_KP_SLASH },
+	{ "KP_MINUS", K_KP_MINUS },
+	{ "KP_PLUS", K_KP_PLUS },
 
 	{ "MWHEELUP", K_MWHEELUP },
 	{ "MWHEELDOWN", K_MWHEELDOWN },
 
-	{ "SEMICOLON", ';' }, // because a raw semicolon seperates commands
+	{ "SEMICOLON", ';' }, // Because a raw semicolon seperates commands.
 
 	{ NULL, 0 }
 };
@@ -295,7 +366,7 @@ void Key_Message(int key)
 		return;
 	}
 
-	if (key == K_ESCAPE)
+	if (key == K_ESCAPE || key == K_GAMEPAD_SELECT)
 	{
 		key_dest = key_game;
 		chat_bufferlen = 0;
@@ -421,8 +492,6 @@ void Key_Unbindall_f()
 void Key_Bind_f()
 {
 	int i, c, b;
-	char cmd[1024];
-
 	c = Cmd_Argc();
 
 	if (c != 2 && c != 3)
@@ -437,6 +506,12 @@ void Key_Bind_f()
 		return;
 	}
 
+	// Don't allow binding escape.
+	if (b == K_GAMEPAD_SELECT || b == K_ESCAPE)
+	{
+		return;
+	}
+
 	if (c == 2)
 	{
 		if (keybindings[b])
@@ -447,12 +522,13 @@ void Key_Bind_f()
 	}
 
 	// copy the rest of the command line
+	char cmd[1024];
 	cmd[0] = 0; // start out with a null string
 	for (i = 2; i < c; i++)
 	{
 		if (i > 2)
-			strcat(cmd, " ");
-		strcat(cmd, Cmd_Argv(i));
+			Q_strncat(cmd, " ", 1024);
+		Q_strncat(cmd, Cmd_Argv(i), 1024);
 	}
 
 	Key_SetBinding(b, cmd);
@@ -521,7 +597,11 @@ static bool Key_isSpecial(int key)
 
 void Char_Event(int key, bool specialOnlyFlag)
 {
+    #if defined(__GCW_ZERO__)
+    bool specialFlag = specialOnlyFlag;
+    #else
     bool specialFlag = Key_isSpecial(key);
+    #endif
     
     switch (key_dest)
     {
@@ -566,6 +646,55 @@ void Char_Event(int key, bool specialOnlyFlag)
         break;
     }
 }
+
+#if defined(__GCW_ZERO__)
+static void Key_checkHarwiredCheats(int key)
+{
+    // Cheats for GCW Zero.
+    if (keydown[K_GAMEPAD_LOCK])
+    {
+        switch (key)
+        {
+        case K_GAMEPAD_B:
+            Cbuf_AddText("impulse 9\n"); // All weapons and ammos.
+            return;
+        case K_GAMEPAD_X:
+            Cbuf_AddText("impulse -1\n"); // Quad damage.
+            return;
+        case K_GAMEPAD_Y:
+            Cbuf_AddText("impulse 11\n"); // Get a rune.
+            return;
+        case K_GAMEPAD_START:
+            Cbuf_AddText("cheats 1\n");
+            return;
+        case K_GAMEPAD_LEFT:
+            Cbuf_AddText("notarget\n");
+            return;
+        case K_GAMEPAD_RIGHT:
+            Cbuf_AddText("fly\n");
+            return;
+        case K_GAMEPAD_DOWN:
+            Cbuf_AddText("noclip\n");
+            return;
+        case K_GAMEPAD_UP:
+            Cbuf_AddText("god\n");
+            return;
+        case K_GAMEPAD_L:
+            if (r_draw_world.value == 0)
+                Cbuf_AddText("r_draw_world 1\n");
+            else
+                Cbuf_AddText("r_draw_world 0\n");
+            return;
+        case K_GAMEPAD_R:
+            if (r_lightmap_only.value == 0)
+                Cbuf_AddText("r_lightmap_only 1\n");
+            else
+                Cbuf_AddText("r_lightmap_only 0\n");
+            return;
+        }
+    }
+}
+#endif
 
 /*
    Called by the system between frames for both key up and key down events
@@ -613,7 +742,7 @@ void Key_Event(int key, bool down)
 	//
 	// handle escape specialy, so the user can never unbind it
 	//
-	if (key == K_ESCAPE)
+	if (key == K_ESCAPE || key == K_GAMEPAD_SELECT)
 	{
 		if (!down)
 			return;
@@ -643,6 +772,11 @@ void Key_Event(int key, bool down)
 		M_ToggleMenu_f();
 		return;
 	}
+
+    #if defined(__GCW_ZERO__)
+    if (down)
+        Key_checkHarwiredCheats(key);
+    #endif
 
 	// key up events only generate commands if the game key binding is
 	// a button command (leading + sign).  These will occur even in console mode,

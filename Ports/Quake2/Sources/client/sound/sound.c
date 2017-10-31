@@ -56,8 +56,8 @@ cvar_t *s_khz;
 cvar_t *s_mixahead;
 cvar_t *s_show;
 cvar_t *s_ambient;
-cvar_t * s_underwater;
-cvar_t * s_underwater_gain_hf;
+cvar_t *s_underwater;
+cvar_t *s_underwater_gain_hf;
 
 channel_t channels[MAX_CHANNELS];
 int num_sfx;
@@ -70,7 +70,7 @@ qboolean snd_initialized = false;
 sfx_t known_sfx[MAX_SFX];
 sndstarted_t sound_started = SS_NOT;
 sound_t sound;
-static qboolean s_registering;
+static bool s_registering;
 
 qboolean snd_is_underwater;
 qboolean snd_is_underwater_enabled;

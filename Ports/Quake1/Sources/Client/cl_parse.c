@@ -29,10 +29,9 @@
 #include "Common/zone.h"
 #include "Networking/net.h"
 #include "Networking/protocol.h"
-#include "Rendering/gl_model.h"
-#include "Rendering/glquake.h"
+#include "Rendering/r_model.h"
+#include "Rendering/r_private.h"
 #include "Server/server.h"
-#include "Sound/cdaudio.h"
 #include "Sound/sound.h"
 
 #include <stdlib.h>
@@ -251,19 +250,19 @@ void CL_ParseServerInfo()
 
 	// parse signon message
 	str = MSG_ReadString();
-	strncpy(cl.levelname, str, sizeof(cl.levelname) - 1);
+	Q_strncpy(cl.levelname, str, sizeof(cl.levelname));
 
 	// seperate the printfs so the server message can have a color
 	Con_Printf("\n\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\37\n\n");
 	Con_Printf("%c%s\n", 2, str);
 
 	//
-	// first we go through and touch all of the precache data that still
+	// first we go through and touch all of the s_precache data that still
 	// happens to be in the cache, so precaching something else doesn't
 	// needlessly purge it
 	//
 
-	// precache models
+	// s_precache models
 	memset(cl.model_precache, 0, sizeof(cl.model_precache));
 	for (nummodels = 1;; nummodels++)
 	{
@@ -275,11 +274,11 @@ void CL_ParseServerInfo()
 			Con_Printf("Server sent too many model precaches\n");
 			return;
 		}
-		strcpy(model_precache[nummodels], str);
+		Q_strncpy(model_precache[nummodels], str, MAX_QPATH);
 		Mod_TouchModel(str);
 	}
 
-	// precache sounds
+	// s_precache sounds
 	memset(cl.sound_precache, 0, sizeof(cl.sound_precache));
 	for (numsounds = 1;; numsounds++)
 	{
@@ -291,7 +290,7 @@ void CL_ParseServerInfo()
 			Con_Printf("Server sent too many sound precaches\n");
 			return;
 		}
-		strcpy(sound_precache[numsounds], str);
+		Q_strncpy(sound_precache[numsounds], str, MAX_QPATH);
 		S_TouchSound(str);
 	}
 
@@ -319,7 +318,7 @@ void CL_ParseServerInfo()
 	// local state
 	cl_entities[0].model = cl.worldmodel = cl.model_precache[1];
 
-	R_NewMap();
+	R_beginNewMap();
 
 	Hunk_Check(); // make sure nothing is hurt
 
@@ -682,7 +681,7 @@ void CL_ParseStatic()
 
 	VectorCopy(ent->baseline.origin, ent->origin);
 	VectorCopy(ent->baseline.angles, ent->angles);
-	R_AddEfrags(ent);
+	R_Efrag_add(ent);
 }
 
 void CL_ParseStaticSound()
@@ -825,7 +824,7 @@ void CL_ParseServerMessage()
 			i = MSG_ReadByte();
 			if (i >= cl.maxclients)
 				Host_Error("CL_ParseServerMessage: svc_updatename > MAX_SCOREBOARD");
-			strcpy(cl.scores[i].name, MSG_ReadString());
+			Q_strncpy(cl.scores[i].name, MSG_ReadString(), sizeof(cl.scores[i].name));
 			break;
 
 		case svc_updatefrags:

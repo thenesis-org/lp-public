@@ -1,6 +1,6 @@
 #!/bin/bash
-output_path=Output/Targets/Linux-x86-32/Quake2
 bin_path=Output/Targets/Linux-x86-32/Release/bin
+output_path=Output/Targets/Linux-x86-32/Quake2
 mkdir -p $output_path
 mkdir -p $output_path/baseq2
 mkdir -p $output_path/ctf

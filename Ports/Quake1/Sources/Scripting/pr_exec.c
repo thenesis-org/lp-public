@@ -284,11 +284,7 @@ void PR_RunError(char *error, ...)
  */
 
 /*
-   ====================
-   PR_EnterFunction
-
    Returns the new program statement counter
-   ====================
  */
 int PR_EnterFunction(dfunction_t *f)
 {
@@ -324,11 +320,6 @@ int PR_EnterFunction(dfunction_t *f)
 	return f->first_statement - 1; // offset the s++
 }
 
-/*
-   ====================
-   PR_LeaveFunction
-   ====================
- */
 int PR_LeaveFunction()
 {
 	int i, c;

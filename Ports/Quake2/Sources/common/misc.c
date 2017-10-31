@@ -43,7 +43,7 @@ cvar_t *showtrace;
 #endif
 cvar_t *dedicated;
 
-extern cvar_t *logfile_active;
+extern cvar_t *consoleLogFile;
 extern jmp_buf abortframe; /* an ERR_DROP occured, exit the entire frame */
 extern zhead_t z_chain;
 
@@ -235,7 +235,7 @@ static void Qcommon_Init(int argc, char **argv)
 	modder = Cvar_Get("modder", "0", 0);
 	timescale = Cvar_Get("timescale", "1", 0);
 	fixedtime = Cvar_Get("fixedtime", "0", 0);
-	logfile_active = Cvar_Get("logfile", "1", CVAR_ARCHIVE);
+	consoleLogFile = Cvar_Get("logfile", "0", CVAR_ARCHIVE);
 	#ifndef DEDICATED_ONLY
 	showtrace = Cvar_Get("showtrace", "0", 0);
 	#endif
@@ -267,13 +267,9 @@ static void Qcommon_Init(int argc, char **argv)
 	{
 		/* if the user didn't give any commands, run default action */
 		if (!dedicated->value)
-		{
 			Cbuf_AddText("d1\n");
-		}
 		else
-		{
 			Cbuf_AddText("dedicated_start\n");
-		}
 
 		Cbuf_Execute();
 	}
@@ -412,7 +408,14 @@ static void Qcommon_Frame(int msec_)
 
 void Qcommon_Run(int argc, char **argv)
 {
-	/* Redirect stdout and stderr into a file */
+    extern bool logFileEnabled;
+
+	for (int i = 1; i < argc; i++)
+	{
+		if (!strcmp("-log", argv[i]))
+			logFileEnabled = true;
+	}
+
 	#ifndef DEDICATED_ONLY
 	extern void Sys_RedirectStdout();
 	Sys_RedirectStdout();

@@ -1,9 +1,9 @@
 [Desktop Entry]
-Name=Quake - Ground Zero
+Name=Dissolution of Eternity
 Type=Application
-Exec=quake-gles1 -game rogue
+Exec=quake-gles1 -rogue
 Icon=rogue
-Comment=Quake - Ground Zero mission pack
+Comment=Quake - Dissolution of Eternity mission pack
 Terminal=false
 Categories=games;
 X-OD-Manual=manual-gcw0.txt

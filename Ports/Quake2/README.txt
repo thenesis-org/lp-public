@@ -1,4 +1,4 @@
-Thenesis Quake II v1.0
+Thenesis Quake II v1.1
 
 This is a port of id Software's Quake II which focus on embedded devices like the Raspberry Pi, GCW Zero or Creator CI20.
 
@@ -40,7 +40,17 @@ TODO
 
 - Add a virtual keyboard for targets without keyboard. This is necessary to enter player name, internet server address, etc
 - Add auto-aiming when using a stick. A possibility is to select targets successively by pressing a button, then auto-aim with another button.
-- Implement GLES 2.0 version. This will allow to use buffers for meshes and to lerp between frames in the shader.
+- For GLES 2.0 version, use buffers for meshes and to lerp between frames in the shader.
 - Remove mesh optimization. This is not necessary with current hardware, just perform a quick indexing.
 - Add "modifier" keys/buttons so that we can use the same button for several actions when modifiers are pressed.
-- Add more command bindings in the key menu. This is useful for targets without keyboard and for some not well documented commands.
+
+History
+-------
+
+Version 1.1:
+- Added GLES 2 version.
+- Added more command bindings in the key menu. This is useful for targets without keyboard and for some not well documented commands.
+- Optimizations mainly in rendering.
+- Fixed all known bugs in rendering.
+- Rendering code refactoring (again).
+- A lot of bug fixes everywhere.

@@ -22,7 +22,7 @@
 
 #include "Client/client.h"
 #include "Common/quakedef.h"
-#include "Rendering/gl_model.h"
+#include "Rendering/r_model.h"
 #include "Scripting/progs.h"
 
 #include <setjmp.h>

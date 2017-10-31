@@ -326,12 +326,6 @@ static void Slist_Poll()
 	slistLocal = true;
 }
 
-/*
-   ===================
-   NET_Connect
-   ===================
- */
-
 int hostCacheCount = 0;
 hostcache_t hostcache[HOSTCACHESIZE];
 

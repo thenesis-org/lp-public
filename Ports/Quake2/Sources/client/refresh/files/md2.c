@@ -1,33 +1,9 @@
-/*
- * Copyright (C) 1997-2001 Id Software, Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or (at
- * your option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *
- * See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
- * 02111-1307, USA.
- *
- * =======================================================================
- *
- * MD2 file format
- *
- * =======================================================================
- */
+// MD2 file format
+#include "client/refresh/r_private.h"
 
-#include "client/refresh/local.h"
+#define MAX_LBM_HEIGHT 480
 
-void
-LoadMD2(model_t *mod, void *buffer)
+void LoadMD2(model_t *mod, void *buffer)
 {
 	int i, j;
 	dmdl_t *pinmodel, *pheader;
@@ -43,7 +19,7 @@ LoadMD2(model_t *mod, void *buffer)
 
 	if (version != ALIAS_VERSION)
 	{
-		VID_Error(ERR_DROP, "%s has wrong version number (%i should be %i)",
+		R_error(ERR_DROP, "%s has wrong version number (%i should be %i)",
 				mod->name, version, ALIAS_VERSION);
 	}
 
@@ -57,32 +33,32 @@ LoadMD2(model_t *mod, void *buffer)
 
 	if (pheader->skinheight > MAX_LBM_HEIGHT)
 	{
-		VID_Error(ERR_DROP, "model %s has a skin taller than %d", mod->name, MAX_LBM_HEIGHT);
+		R_error(ERR_DROP, "model %s has a skin taller than %d", mod->name, MAX_LBM_HEIGHT);
 	}
 
 	if (pheader->num_xyz <= 0)
 	{
-		VID_Error(ERR_DROP, "model %s has no vertices", mod->name);
+		R_error(ERR_DROP, "model %s has no vertices", mod->name);
 	}
 
 	if (pheader->num_xyz > MAX_VERTS)
 	{
-		VID_Error(ERR_DROP, "model %s has too many vertices", mod->name);
+		R_error(ERR_DROP, "model %s has too many vertices", mod->name);
 	}
 
 	if (pheader->num_st <= 0)
 	{
-		VID_Error(ERR_DROP, "model %s has no st vertices", mod->name);
+		R_error(ERR_DROP, "model %s has no st vertices", mod->name);
 	}
 
 	if (pheader->num_tris <= 0)
 	{
-		VID_Error(ERR_DROP, "model %s has no triangles", mod->name);
+		R_error(ERR_DROP, "model %s has no triangles", mod->name);
 	}
 
 	if (pheader->num_frames <= 0)
 	{
-		VID_Error(ERR_DROP, "model %s has no frames", mod->name);
+		R_error(ERR_DROP, "model %s has no frames", mod->name);
 	}
 
 	/* load base s and t vertices (not used in gl version) */

@@ -71,22 +71,16 @@ void* Hunk_Begin(int maxsize)
 
 void* Hunk_Alloc(int size)
 {
-	byte *buf;
-
 	/* round to cacheline */
 	size = (size + 31) & ~31;
-
 	if (curhunksize + size > maxhunksize)
-	{
 		Sys_Error("Hunk_Alloc overflow");
-	}
-
-	buf = membase + sizeof(int) + curhunksize;
+	byte *buf = membase + sizeof(int) + curhunksize;
 	curhunksize += size;
 	return buf;
 }
 
-int Hunk_End(void)
+int Hunk_End()
 {
 	byte *n = NULL;
 

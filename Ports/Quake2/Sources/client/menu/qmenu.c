@@ -150,15 +150,10 @@ void Field_Draw(menufield_s *f)
 	if (Menu_ItemAtCursor(f->generic.parent) == f)
 	{
 		int offset;
-
 		if (f->visible_offset)
-		{
 			offset = f->visible_length;
-		}
 		else
-		{
 			offset = f->cursor;
-		}
 
 		if (((int)(Sys_Milliseconds() / 250)) & 1)
 		{
@@ -180,9 +175,7 @@ void Field_Draw(menufield_s *f)
 qboolean Field_Key(menufield_s *f, int key)
 {
 	if (key < 0 || key > 127)
-	{
 		return false;
-	}
 
 	switch (key)
 	{

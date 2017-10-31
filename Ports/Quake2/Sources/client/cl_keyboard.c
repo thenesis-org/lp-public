@@ -43,7 +43,7 @@
 
 
 #include "client/client.h"
-#include "refresh/local.h"
+#include "client/refresh/r_private.h"
 
 static cvar_t *cfg_unbindall;
 
@@ -92,8 +92,7 @@ typedef struct
 	int keynum;
 } keyname_t;
 
-/* Translates internal key representations
- * into human readable strings. */
+// Translates internal key representations into human readable strings.
 keyname_t keynames[] =
 {
 	{ "SELECT", K_GAMEPAD_SELECT },
@@ -246,7 +245,7 @@ keyname_t keynames[] =
 	{ "MWHEELUP", K_MWHEELUP },
 	{ "MWHEELDOWN", K_MWHEELDOWN },
 
-	{ "SEMICOLON", ';' }, /* because a raw semicolon seperates commands */
+	{ "SEMICOLON", ';' }, // Because a raw semicolon seperates commands.
 
 	{ NULL, 0 }
 };
@@ -550,7 +549,7 @@ void Key_Message(int key)
  * Single ascii characters return themselves, while
  * the K_* names are matched up.
  */
-int Key_StringToKeynum(char *str)
+static int Key_StringToKeynum(char *str)
 {
 	keyname_t *kn;
 
@@ -579,7 +578,7 @@ char* Key_KeynumToString(int keynum)
 		return "<KEY NOT FOUND>";
 
 	static char tinystr[2] = { 0 };
-	if ((keynum > 32) && (keynum < 127))
+	if (keynum > 32 && keynum < 127)
 	{
 		/* printable ascii */
 		tinystr[0] = keynum;
@@ -659,14 +658,13 @@ void Key_Bind_f()
 	}
 
 	int b = Key_StringToKeynum(Cmd_Argv(1));
-
 	if (b == -1)
 	{
 		Com_Printf("\"%s\" isn't a valid key\n", Cmd_Argv(1));
 		return;
 	}
 
-	/* don't allow binding escape */
+	// Don't allow binding escape.
 	if (b == K_GAMEPAD_SELECT || b == K_ESCAPE)
 	{
 		if (doneWithDefaultCfg)
@@ -855,7 +853,11 @@ static bool Key_isSpecial(int key)
  */
 void Char_Event(int key, bool specialOnlyFlag)
 {
+    #if defined(__GCW_ZERO__)
+    bool specialFlag = specialOnlyFlag;
+    #else
     bool specialFlag = Key_isSpecial(key);
+    #endif
     
     switch (cls.key_dest)
     {
@@ -902,13 +904,13 @@ void Char_Event(int key, bool specialOnlyFlag)
 }
 
 #if defined(__GCW_ZERO__)
-static Key_checkHarwiredCheats(int key)
+static void Key_checkHarwiredCheats(int key)
 {
     // Cheats for GCW Zero.
     if (keydown[K_GAMEPAD_LOCK])
     {
         extern cvar_t *gl_drawworld;
-        extern cvar_t *gl_lightmap;
+        extern cvar_t *r_lightmap_only;
         switch (key)
         {
         case K_GAMEPAD_START:
@@ -939,10 +941,10 @@ static Key_checkHarwiredCheats(int key)
             return;
 
         case K_GAMEPAD_R:
-            if (gl_lightmap->value == 0)
-                Cbuf_AddText("gl_lightmap 1\n");
+            if (r_lightmap_only->value == 0)
+                Cbuf_AddText("r_lightmap_only 1\n");
             else
-                Cbuf_AddText("gl_lightmap 0\n");
+                Cbuf_AddText("r_lightmap_only 0\n");
             return;
         }
     }
@@ -972,14 +974,12 @@ void Key_Event(int key, bool down)
         }
 	}
 	else
-	{
 		key_repeats[key] = 0;
-	}
 
 	// Fullscreen switch through Alt + Return.
 	if (down && keydown[K_ALT] && key == K_ENTER)
 	{
-        VID_toggleFullScreen();
+        R_Window_toggleFullScreen();
 		return;
 	}
 
@@ -1020,23 +1020,24 @@ void Key_Event(int key, bool down)
 
 			switch (cls.key_dest)
 			{
-			/* Close chat window */
+			// Close chat window.
 			case key_message:
 				Key_Message(key);
 				break;
-
-			/* Close menu or one layer up */
+			// Close menu or one layer up.
 			case key_menu:
 				M_Keydown(key, -1);
 				break;
-
-			/* Pause game and / or leave console, break into the menu. */
+			// Pause game and break into the menu.
 			case key_game:
-			case key_console:
 				MenuMain_enter();
+                break;
+            // Leave console.
+			case key_console:
+                Con_ToggleConsole_f();
 				break;
 			}
-
+            
 			return;
 		}
 

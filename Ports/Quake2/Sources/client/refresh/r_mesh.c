@@ -1,30 +1,4 @@
-/*
- * Copyright (C) 1997-2001 Id Software, Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or (at
- * your option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *
- * See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
- * 02111-1307, USA.
- *
- * =======================================================================
- *
- * Mesh handling
- *
- * =======================================================================
- */
-
-#include "local.h"
+#include "client/refresh/r_private.h"
 
 #define NUMVERTEXNORMALS 162
 #define SHADEDOT_QUANT 16
@@ -39,17 +13,11 @@ float r_avertexnormal_dots[SHADEDOT_QUANT][256] =
 #include "constants/anormtab.h"
 ;
 
-typedef float vec4_t[4];
 static vec4_t s_lerped[MAX_VERTS];
-vec3_t shadevector;
-float shadelight[3];
-float *shadedots = r_avertexnormal_dots[0];
-extern vec3_t lightspot;
-extern qboolean graphics_has_stencil;
 
-void R_LerpVerts(int nverts, dtrivertx_t *v, dtrivertx_t *ov, dtrivertx_t *verts, float *lerp, float move[3], float frontv[3], float backv[3])
+void R_AliasModel_lerp(entity_t *entity, int nverts, dtrivertx_t *v, dtrivertx_t *ov, dtrivertx_t *verts, float *lerp, float move[3], float frontv[3], float backv[3])
 {
-	if (currententity->flags & (RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE | RF_SHELL_DOUBLE | RF_SHELL_HALF_DAM))
+	if (entity->flags & (RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE | RF_SHELL_DOUBLE | RF_SHELL_HALF_DAM))
 	{
 		for (int i = 0; i < nverts; i++, v++, ov++, lerp += 4)
 		{
@@ -73,22 +41,27 @@ void R_LerpVerts(int nverts, dtrivertx_t *v, dtrivertx_t *ov, dtrivertx_t *verts
 /*
  * Interpolates between two frames and origins
  */
-void R_DrawAliasFrameLerp(dmdl_t *paliashdr, float backlerp)
+void R_AliasModel_drawLerp(entity_t *entity, dmdl_t *paliashdr, float backlerp, float *shadelight, float *shadedots)
 {
 	float alpha = 1.0f;
-	if (currententity->flags & RF_TRANSLUCENT)
-		alpha = currententity->alpha;
-
-	if (currententity->flags & (RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE | RF_SHELL_DOUBLE | RF_SHELL_HALF_DAM))
+	if (entity->flags & RF_TRANSLUCENT)
+		alpha = entity->alpha;
+    if (alpha < 1.0f)
+    {
+		oglwEnableBlending(true);
+		oglwEnableDepthWrite(false);
+    }
+    
+	if (entity->flags & (RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE | RF_SHELL_DOUBLE | RF_SHELL_HALF_DAM))
 		oglwEnableTexturing(0, GL_FALSE);
 
-	daliasframe_t *frame = (daliasframe_t *)((byte *)paliashdr + paliashdr->ofs_frames + currententity->frame * paliashdr->framesize);
-	daliasframe_t *oldframe = (daliasframe_t *)((byte *)paliashdr + paliashdr->ofs_frames + currententity->oldframe * paliashdr->framesize);
+	daliasframe_t *frame = (daliasframe_t *)((byte *)paliashdr + paliashdr->ofs_frames + entity->frame * paliashdr->framesize);
+	daliasframe_t *oldframe = (daliasframe_t *)((byte *)paliashdr + paliashdr->ofs_frames + entity->oldframe * paliashdr->framesize);
 
 	/* move should be the delta back to the previous frame * backlerp */
 	vec3_t move, delta, vectors[3];
-	VectorSubtract(currententity->oldorigin, currententity->origin, delta);
-	AngleVectors(currententity->angles, vectors[0], vectors[1], vectors[2]);
+	VectorSubtract(entity->oldorigin, entity->origin, delta);
+	AngleVectors(entity->angles, vectors[0], vectors[1], vectors[2]);
 	move[0] = DotProduct(delta, vectors[0]); /* forward */
 	move[1] = -DotProduct(delta, vectors[1]); /* left */
 	move[2] = DotProduct(delta, vectors[2]); /* up */
@@ -108,7 +81,7 @@ void R_DrawAliasFrameLerp(dmdl_t *paliashdr, float backlerp)
 
 	float *lerp = s_lerped[0];
 	dtrivertx_t *verts = frame->verts, *v = verts, *ov = oldframe->verts;
-	R_LerpVerts(paliashdr->num_xyz, v, ov, verts, lerp, move, frontv, backv);
+	R_AliasModel_lerp(entity, paliashdr->num_xyz, v, ov, verts, lerp, move, frontv, backv);
 
 	int *order = (int *)((byte *)paliashdr + paliashdr->ofs_glcmds);
 
@@ -127,11 +100,14 @@ void R_DrawAliasFrameLerp(dmdl_t *paliashdr, float backlerp)
 			vtx = oglwAllocateTriangleFan(count);
 		}
 		else
-		{
 			vtx = oglwAllocateTriangleStrip(count);
-		}
-
-		if (currententity->flags & (RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE))
+        if (vtx == NULL)
+        {
+            order += 3 * count;
+            continue;
+        }
+        
+		if (entity->flags & (RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE))
 		{
 			do
 			{
@@ -160,19 +136,25 @@ void R_DrawAliasFrameLerp(dmdl_t *paliashdr, float backlerp)
 	}
 	oglwEnd();
 
-	if (currententity->flags & (RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE | RF_SHELL_DOUBLE | RF_SHELL_HALF_DAM))
+	if (entity->flags & (RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE | RF_SHELL_DOUBLE | RF_SHELL_HALF_DAM))
 		oglwEnableTexturing(0, GL_TRUE);
+
+    if (alpha < 1.0f)
+    {
+		oglwEnableBlending(false);
+		oglwEnableDepthWrite(true);
+    }
 }
 
-static void R_DrawAliasShadow(dmdl_t *paliashdr, int posenum)
+static void R_AliasModel_drawShadow(entity_t *entity, dmdl_t *paliashdr, vec3_t shadevector, vec3_t lightSpot)
 {
 	/* stencilbuffer shadows */
-	if (graphics_has_stencil && gl_stencilshadow->value)
+	if (r_stencilAvailable && gl_stencilshadow->value)
 		oglwEnableStencilTest(true);
 
 	oglwBegin(GL_TRIANGLES);
 
-	float lheight = currententity->origin[2] - lightspot[2];
+	float lheight = entity->origin[2] - lightSpot[2];
 	int *order = (int *)((byte *)paliashdr + paliashdr->ofs_glcmds);
 	float height = -lheight + 0.1f;
 	while (1)
@@ -190,6 +172,11 @@ static void R_DrawAliasShadow(dmdl_t *paliashdr, int posenum)
 		}
 		else
 			vtx = oglwAllocateTriangleStrip(count);
+        if (vtx == NULL)
+        {
+            order += 3 * count;
+            continue;
+        }
 
 		do
 		{
@@ -202,47 +189,35 @@ static void R_DrawAliasShadow(dmdl_t *paliashdr, int posenum)
 	}
 	oglwEnd();
 
-	/* stencilbuffer shadows */
-	if (graphics_has_stencil && gl_stencilshadow->value)
+	if (r_stencilAvailable && gl_stencilshadow->value)
 		oglwEnableStencilTest(false);
 }
 
-static qboolean R_CullAliasModel(vec3_t bbox[8], entity_t *e)
+static qboolean R_AliasModel_cull(entity_t *entity, vec3_t bbox[8])
 {
-	int i;
-	vec3_t mins, maxs;
-	dmdl_t *paliashdr;
-	vec3_t vectors[3];
-	vec3_t thismins, oldmins, thismaxs, oldmaxs;
-	daliasframe_t *pframe, *poldframe;
-	vec3_t angles;
+    model_t *model = entity->model;
+	dmdl_t *paliashdr = (dmdl_t *)model->extradata;
 
-	paliashdr = (dmdl_t *)currentmodel->extradata;
-
-	if ((e->frame >= paliashdr->num_frames) || (e->frame < 0))
+	if ((entity->frame >= paliashdr->num_frames) || (entity->frame < 0))
 	{
-		VID_Printf(PRINT_DEVELOPER, "R_CullAliasModel %s: no such frame %d\n",
-			currentmodel->name, e->frame);
-		e->frame = 0;
+		R_printf(PRINT_DEVELOPER, "R_AliasModel_cull %s: no such frame %d\n", model->name, entity->frame);
+		entity->frame = 0;
 	}
 
-	if ((e->oldframe >= paliashdr->num_frames) || (e->oldframe < 0))
+	if ((entity->oldframe >= paliashdr->num_frames) || (entity->oldframe < 0))
 	{
-		VID_Printf(PRINT_DEVELOPER, "R_CullAliasModel %s: no such oldframe %d\n",
-			currentmodel->name, e->oldframe);
-		e->oldframe = 0;
+		R_printf(PRINT_DEVELOPER, "R_AliasModel_cull %s: no such oldframe %d\n", model->name, entity->oldframe);
+		entity->oldframe = 0;
 	}
 
-	pframe = (daliasframe_t *)((byte *)paliashdr + paliashdr->ofs_frames +
-	                           e->frame * paliashdr->framesize);
-
-	poldframe = (daliasframe_t *)((byte *)paliashdr + paliashdr->ofs_frames +
-	                              e->oldframe * paliashdr->framesize);
+	daliasframe_t *pframe = (daliasframe_t *)((byte *)paliashdr + paliashdr->ofs_frames + entity->frame * paliashdr->framesize);
+	daliasframe_t *poldframe = (daliasframe_t *)((byte *)paliashdr + paliashdr->ofs_frames + entity->oldframe * paliashdr->framesize);
 
 	/* compute axially aligned mins and maxs */
+	vec3_t mins, maxs;
 	if (pframe == poldframe)
 	{
-		for (i = 0; i < 3; i++)
+		for (int i = 0; i < 3; i++)
 		{
 			mins[i] = pframe->translate[i];
 			maxs[i] = mins[i] + pframe->scale[i] * 255;
@@ -250,28 +225,28 @@ static qboolean R_CullAliasModel(vec3_t bbox[8], entity_t *e)
 	}
 	else
 	{
-		for (i = 0; i < 3; i++)
+		for (int i = 0; i < 3; i++)
 		{
-			thismins[i] = pframe->translate[i];
-			thismaxs[i] = thismins[i] + pframe->scale[i] * 255;
+			float thismins = pframe->translate[i];
+			float thismaxs = thismins + pframe->scale[i] * 255;
 
-			oldmins[i] = poldframe->translate[i];
-			oldmaxs[i] = oldmins[i] + poldframe->scale[i] * 255;
+			float oldmins = poldframe->translate[i];
+			float oldmaxs = oldmins + poldframe->scale[i] * 255;
 
-			if (thismins[i] < oldmins[i])
-				mins[i] = thismins[i];
+			if (thismins < oldmins)
+				mins[i] = thismins;
 			else
-				mins[i] = oldmins[i];
+				mins[i] = oldmins;
 
-			if (thismaxs[i] > oldmaxs[i])
-				maxs[i] = thismaxs[i];
+			if (thismaxs > oldmaxs)
+				maxs[i] = thismaxs;
 			else
-				maxs[i] = oldmaxs[i];
+				maxs[i] = oldmaxs;
 		}
 	}
 
 	/* compute a full bounding box */
-	for (i = 0; i < 8; i++)
+	for (int i = 0; i < 8; i++)
 	{
 		vec3_t tmp;
 
@@ -294,11 +269,13 @@ static qboolean R_CullAliasModel(vec3_t bbox[8], entity_t *e)
 	}
 
 	/* rotate the bounding box */
-	VectorCopy(e->angles, angles);
+	vec3_t angles;
+	VectorCopy(entity->angles, angles);
 	angles[YAW] = -angles[YAW];
+	vec3_t vectors[3];
 	AngleVectors(angles, vectors[0], vectors[1], vectors[2]);
 
-	for (i = 0; i < 8; i++)
+	for (int i = 0; i < 8; i++)
 	{
 		vec3_t tmp;
 
@@ -308,15 +285,14 @@ static qboolean R_CullAliasModel(vec3_t bbox[8], entity_t *e)
 		bbox[i][1] = -DotProduct(vectors[1], tmp);
 		bbox[i][2] = DotProduct(vectors[2], tmp);
 
-		VectorAdd(e->origin, bbox[i], bbox[i]);
+		VectorAdd(entity->origin, bbox[i], bbox[i]);
 	}
 
-	int p, f, aggregatemask = ~0;
-
-	for (p = 0; p < 8; p++)
+	int aggregatemask = ~0;
+	for (int p = 0; p < 8; p++)
 	{
 		int mask = 0;
-		for (f = 0; f < 4; f++)
+		for (int f = 0; f < 4; f++)
 		{
 			float dp = DotProduct(frustum[f].normal, bbox[p]);
 			if ((dp - frustum[f].dist) < 0)
@@ -324,84 +300,53 @@ static qboolean R_CullAliasModel(vec3_t bbox[8], entity_t *e)
 		}
 		aggregatemask &= mask;
 	}
-
 	if (aggregatemask)
 		return true;
 
 	return false;
 }
 
-void R_DrawAliasModel(entity_t *e)
+static void R_AliasModel_light(entity_t *entity, vec3_t shadelight, vec3_t lightSpot)
 {
-	int i;
-	dmdl_t *paliashdr;
-	float an;
-	vec3_t bbox[8];
-	image_t *skin;
-
-	if (!(e->flags & RF_WEAPONMODEL))
-	{
-		if (R_CullAliasModel(bbox, e))
-			return;
-	}
-
-	if (e->flags & RF_WEAPONMODEL)
-	{
-		if (gl_lefthand->value == 2)
-			return;
-	}
-
-	paliashdr = (dmdl_t *)currentmodel->extradata;
-
-	/* get lighting information */
-	if (currententity->flags &
-	    (RF_SHELL_HALF_DAM | RF_SHELL_GREEN | RF_SHELL_RED |
-	     RF_SHELL_BLUE | RF_SHELL_DOUBLE))
+	VectorClear(lightSpot);
+	if (entity->flags & (RF_SHELL_HALF_DAM | RF_SHELL_GREEN | RF_SHELL_RED | RF_SHELL_BLUE | RF_SHELL_DOUBLE))
 	{
 		VectorClear(shadelight);
 
-		if (currententity->flags & RF_SHELL_HALF_DAM)
+		if (entity->flags & RF_SHELL_HALF_DAM)
 		{
 			shadelight[0] = 0.56;
 			shadelight[1] = 0.59;
 			shadelight[2] = 0.45;
 		}
 
-		if (currententity->flags & RF_SHELL_DOUBLE)
+		if (entity->flags & RF_SHELL_DOUBLE)
 		{
 			shadelight[0] = 0.9;
 			shadelight[1] = 0.7;
 		}
 
-		if (currententity->flags & RF_SHELL_RED)
-		{
+		if (entity->flags & RF_SHELL_RED)
 			shadelight[0] = 1.0f;
-		}
 
-		if (currententity->flags & RF_SHELL_GREEN)
-		{
+		if (entity->flags & RF_SHELL_GREEN)
 			shadelight[1] = 1.0f;
-		}
 
-		if (currententity->flags & RF_SHELL_BLUE)
-		{
+		if (entity->flags & RF_SHELL_BLUE)
 			shadelight[2] = 1.0f;
-		}
 	}
-	else
-	if (currententity->flags & RF_FULLBRIGHT)
+	else if (entity->flags & RF_FULLBRIGHT)
 	{
-		for (i = 0; i < 3; i++)
-		{
+		for (int i = 0; i < 3; i++)
 			shadelight[i] = 1.0f;
-		}
 	}
 	else
 	{
-		R_LightPoint(currententity->origin, shadelight);
+        cplane_t *lightPlane;
+		R_Lighmap_lightPoint(entity, entity->origin, shadelight, lightSpot, &lightPlane);
 
 		/* player lighting hack for communication back to server */
-		if (currententity->flags & RF_WEAPONMODEL)
+		if (entity->flags & RF_WEAPONMODEL)
 		{
 			/* pick the greatest component, which should be
 			   the same as the mono value returned by software */
@@ -422,8 +367,9 @@ void R_DrawAliasModel(entity_t *e)
 		}
 	}
 
-	if (currententity->flags & RF_MINLIGHT)
+	if (entity->flags & RF_MINLIGHT)
 	{
+        int i;
 		for (i = 0; i < 3; i++)
 		{
 			if (shadelight[i] > 0.1f)
@@ -437,15 +383,13 @@ void R_DrawAliasModel(entity_t *e)
 		}
 	}
 
-	if (currententity->flags & RF_GLOW)
+	if (entity->flags & RF_GLOW)
 	{
 		/* bonus items will pulse with time */
-		float scale;
-		float min;
-		scale = 0.1f * sinf(r_newrefdef.time * 7);
-		for (i = 0; i < 3; i++)
+		float scale = 0.1f * sinf(r_newrefdef.time * 7);
+		for (int i = 0; i < 3; i++)
 		{
-			min = shadelight[i] * 0.8f;
+			float min = shadelight[i] * 0.8f;
 			shadelight[i] += scale;
 			if (shadelight[i] < min)
 				shadelight[i] = min;
@@ -453,72 +397,73 @@ void R_DrawAliasModel(entity_t *e)
 	}
 
 	/* ir goggles color override */
-	if (r_newrefdef.rdflags & RDF_IRGOGGLES && currententity->flags &
-	    RF_IR_VISIBLE)
+	if (r_newrefdef.rdflags & RDF_IRGOGGLES && entity->flags & RF_IR_VISIBLE)
 	{
 		shadelight[0] = 1.0f;
 		shadelight[1] = 0.0f;
 		shadelight[2] = 0.0f;
 	}
+}
 
-	shadedots = r_avertexnormal_dots[((int)(currententity->angles[1] *
-	                                        (SHADEDOT_QUANT / 360.0f))) & (SHADEDOT_QUANT - 1)];
+void R_AliasModel_draw(entity_t *entity)
+{
+	if (!(entity->flags & RF_WEAPONMODEL))
+	{
+        vec3_t bbox[8];
+		if (R_AliasModel_cull(entity, bbox))
+			return;
+	}
 
-	an = currententity->angles[1] / 180 * Q_PI;
-	shadevector[0] = cosf(-an);
-	shadevector[1] = sinf(-an);
-	shadevector[2] = 1;
-	VectorNormalize(shadevector);
+	if (entity->flags & RF_WEAPONMODEL)
+	{
+		if (gl_lefthand->value == 2)
+			return;
+	}
 
+    model_t *model = entity->model;
+	dmdl_t *paliashdr = (dmdl_t *)model->extradata;
+ 
 	/* locate the proper data */
 	c_alias_polys += paliashdr->num_tris;
 
 	/* draw all the triangles */
-	if (currententity->flags & RF_DEPTHHACK)
+	if (entity->flags & RF_DEPTHHACK)
 	{
 		/* hack the depth range to prevent view model from poking into walls */
 		oglwSetDepthRange(gldepthmin, gldepthmin + 0.3f * (gldepthmax - gldepthmin));
 	}
 
-	if ((currententity->flags & RF_WEAPONMODEL) && (gl_lefthand->value == 1.0F))
+	if ((entity->flags & RF_WEAPONMODEL) && (gl_lefthand->value == 1.0F))
 	{
-		extern void R_MYgluPerspective(GLfloat fovy, GLfloat aspect, GLfloat zNear, GLfloat zFar);
-
 		oglwMatrixMode(GL_PROJECTION);
 		oglwPushMatrix();
 		oglwLoadIdentity();
 		oglwScale(-1, 1, 1);
-		R_MYgluPerspective(r_newrefdef.fov_y,
-			(float)r_newrefdef.width / r_newrefdef.height,
-			4, 4096);
+		R_View_setupProjection(r_newrefdef.fov_y, (float)r_newrefdef.width / r_newrefdef.height, 4, 4096);
 		oglwMatrixMode(GL_MODELVIEW);
 
 		glCullFace(GL_BACK);
 	}
 
 	oglwPushMatrix();
-	e->angles[PITCH] = -e->angles[PITCH];
-	R_RotateForEntity(e);
-	e->angles[PITCH] = -e->angles[PITCH];
+	entity->angles[PITCH] = -entity->angles[PITCH];
+	R_Entity_rotate(entity);
+	entity->angles[PITCH] = -entity->angles[PITCH];
 
 	/* select skin */
-	if (currententity->skin)
-	{
-		skin = currententity->skin; /* custom player skin */
-	}
+	image_t *skin;
+	if (entity->skin)
+		skin = entity->skin; /* custom player skin */
 	else
 	{
-		if (currententity->skinnum >= MAX_MD2SKINS)
-		{
-			skin = currentmodel->skins[0];
-		}
+        model_t *model = entity->model;
+		if (entity->skinnum >= MAX_MD2SKINS)
+			skin = model->skins[0];
 		else
 		{
-			skin = currentmodel->skins[currententity->skinnum];
+			skin = model->skins[entity->skinnum];
 			if (!skin)
-			{
-				skin = currentmodel->skins[0];
-			}
+				skin = model->skins[0];
 		}
 	}
 
@@ -527,37 +472,38 @@ void R_DrawAliasModel(entity_t *e)
 
 	oglwBindTexture(0, skin->texnum);
 	oglwSetTextureBlending(0, GL_MODULATE);
+	oglwEnableSmoothShading(true);
 
-	/* draw it */
-
-	if ((currententity->frame >= paliashdr->num_frames) || (currententity->frame < 0))
+	if ((entity->frame >= paliashdr->num_frames) || (entity->frame < 0))
 	{
-		VID_Printf(PRINT_DEVELOPER, "R_DrawAliasModel %s: no such frame %d\n", currentmodel->name, currententity->frame);
-		currententity->frame = 0;
-		currententity->oldframe = 0;
+		R_printf(PRINT_DEVELOPER, "R_AliasModel_draw %s: no such frame %d\n", entity->model->name, entity->frame);
+		entity->frame = 0;
+		entity->oldframe = 0;
 	}
 
-	if ((currententity->oldframe >= paliashdr->num_frames) || (currententity->oldframe < 0))
+	if ((entity->oldframe >= paliashdr->num_frames) || (entity->oldframe < 0))
 	{
-		VID_Printf(PRINT_DEVELOPER, "R_DrawAliasModel %s: no such oldframe %d\n", currentmodel->name, currententity->oldframe);
-		currententity->frame = 0;
-		currententity->oldframe = 0;
+		R_printf(PRINT_DEVELOPER, "R_AliasModel_draw %s: no such oldframe %d\n", entity->model->name, entity->oldframe);
+		entity->frame = 0;
+		entity->oldframe = 0;
 	}
 
 	if (!gl_lerpmodels->value)
 	{
-		currententity->backlerp = 0;
+		entity->backlerp = 0;
 	}
 
-	oglwEnableSmoothShading(true);
-
-	R_DrawAliasFrameLerp(paliashdr, currententity->backlerp);
+    vec3_t shadelight;
+    vec3_t lightSpot;
+    R_AliasModel_light(entity, shadelight, lightSpot);
+	float *shadedots = r_avertexnormal_dots[((int)(entity->angles[1] * (SHADEDOT_QUANT / 360.0f))) & (SHADEDOT_QUANT - 1)];
+	R_AliasModel_drawLerp(entity, paliashdr, entity->backlerp, shadelight, shadedots);
 
 	oglwEnableSmoothShading(false);
 
 	oglwPopMatrix();
 
-	if ((currententity->flags & RF_WEAPONMODEL) && (gl_lefthand->value == 1.0F))
+	if ((entity->flags & RF_WEAPONMODEL) && (gl_lefthand->value == 1.0F))
 	{
 		oglwMatrixMode(GL_PROJECTION);
 		oglwPopMatrix();
@@ -565,23 +511,33 @@ void R_DrawAliasModel(entity_t *e)
 		glCullFace(GL_FRONT);
 	}
 
-	if (currententity->flags & RF_DEPTHHACK)
+	if (entity->flags & RF_DEPTHHACK)
 	{
 		oglwSetDepthRange(gldepthmin, gldepthmax);
 	}
 
-	if (gl_shadows->value && !(currententity->flags & (RF_TRANSLUCENT | RF_WEAPONMODEL | RF_NOSHADOW)))
+	if (gl_shadows->value && !(entity->flags & (RF_TRANSLUCENT | RF_WEAPONMODEL | RF_NOSHADOW)))
 	{
 		oglwPushMatrix();
 
 		/* don't rotate shadows on ungodly axes */
-		oglwTranslate(e->origin[0], e->origin[1], e->origin[2]);
-		oglwRotate(e->angles[1], 0, 0, 1);
+		oglwTranslate(entity->origin[0], entity->origin[1], entity->origin[2]);
+		oglwRotate(entity->angles[1], 0, 0, 1);
 
 		oglwEnableTexturing(0, GL_FALSE);
 		oglwEnableBlending(true);
 		// oglwEnableDepthWrite(false); // Maybe better with depth written.
-		R_DrawAliasShadow(paliashdr, currententity->frame);
+
+        vec3_t shadevector;
+        {
+            float an = entity->angles[1] / 180 * Q_PI;
+            shadevector[0] = cosf(-an);
+            shadevector[1] = sinf(-an);
+            shadevector[2] = 1;
+            VectorNormalize(shadevector);
+        }
+		R_AliasModel_drawShadow(entity, paliashdr, shadevector, lightSpot);
+
 		oglwEnableTexturing(0, GL_TRUE);
 		oglwEnableBlending(false);
 		// oglwEnableDepthWrite(true);

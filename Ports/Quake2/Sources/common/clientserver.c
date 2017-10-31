@@ -32,7 +32,7 @@
 #define MAXPRINTMSG 4096
 
 FILE *logfile;
-cvar_t *logfile_active; /* 1 = buffer log, 2 = flush after each print */
+cvar_t *consoleLogFile; /* 1 = buffer log, 2 = flush after each print */
 jmp_buf abortframe; /* an ERR_DROP occured, exit the entire frame */
 int server_state;
 
@@ -95,37 +95,24 @@ void Com_Printf(char *fmt, ...)
 	Con_Print(msg);
 	#endif
 
-	/* also echo to debugging console */
+	// also echo to debugging console
 	Sys_ConsoleOutput(msg);
 
-	/* logfile */
-	if (logfile_active && logfile_active->value)
+	if (consoleLogFile && consoleLogFile->value)
 	{
 		char name[MAX_OSPATH];
-
 		if (!logfile)
 		{
-			Com_sprintf(name, sizeof(name), "%s/qconsole.log", FS_WritableGamedir());
-
-			if (logfile_active->value > 2)
-			{
+			Com_sprintf(name, sizeof(name), "%s/console.log", FS_WritableGamedir());
+			if (consoleLogFile->value > 2)
 				logfile = fopen(name, "a");
-			}
 			else
-			{
 				logfile = fopen(name, "w");
-			}
 		}
-
 		if (logfile)
-		{
 			fprintf(logfile, "%s", msg);
-		}
-
-		if (logfile_active->value > 1)
-		{
+		if (consoleLogFile->value > 1)
 			fflush(logfile); /* force it to save every time */
-		}
 	}
 }
 
@@ -202,8 +189,7 @@ void Com_Error(int code, char *fmt, ...)
 	else
 	if (code == ERR_DROP)
 	{
-		Com_Printf("********************\nERROR: %s\n********************\n",
-			msg);
+		Com_Printf("********************\nERROR: %s\n********************\n", msg);
 		SV_Shutdown(va("Server crashed: %s\n", msg), false);
 		#ifndef DEDICATED_ONLY
 		CL_Drop();
@@ -213,7 +199,7 @@ void Com_Error(int code, char *fmt, ...)
 	}
 	else
 	{
-		SV_Shutdown(va("Server fatal crashed: %s\n", msg), false);
+		SV_Shutdown(va("Server fatal error: %s\n", msg), false);
 		#ifndef DEDICATED_ONLY
 		CL_Shutdown();
 		#endif

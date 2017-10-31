@@ -588,7 +588,7 @@ static void CL_InitLocal()
 /*
  * Writes key bindings and archived cvars to user.cfg
  */
-static void CL_WriteConfiguration()
+void CL_WriteConfiguration()
 {
 	FILE *f;
 	char path[MAX_OSPATH];
@@ -628,11 +628,11 @@ cheatvar_t cheatvars[] =
 	{ "timedemo", "0", NULL },
 	{ "gl_drawworld", "1", NULL },
 	{ "cl_testlights", "0", NULL },
-	{ "gl_fullbright", "0", NULL },
+	{ "r_lightmap_disabled", "0", NULL },
 	{ "paused", "0", NULL },
 	{ "fixedtime", "0", NULL },
-	{ "gl_lightmap", "0", NULL },
-	{ "gl_saturatelighting", "0", NULL },
+	{ "r_lightmap_only", "0", NULL },
+	{ "r_lightmap_saturate", "0", NULL },
 	{ NULL, NULL, NULL }
 };
 
@@ -754,7 +754,7 @@ void CL_Frame(int msec)
 	CL_PredictMovement();
 
 	/* allow renderer DLL change */
-	VID_CheckChanges();
+	R_checkChanges();
 
 	if (!cl.refresh_prepped && (cls.state == ca_active))
 	{
@@ -822,25 +822,17 @@ void CL_Frame(int msec)
 void CL_Init()
 {
 	if (dedicated->value)
-	{
 		return; /* nothing running on the client */
-	}
 
 	/* all archived variables will now be loaded */
 	Con_Init();
-
 	S_Init();
-
 	SCR_Init();
-
-	VID_Init();
-
+	R_initialize();
 	IN_Init();
-
 	V_Init();
 
 	net_message.data = net_message_buffer;
-
 	net_message.maxsize = sizeof(net_message_buffer);
 
 	M_Init();
@@ -875,5 +867,5 @@ void CL_Shutdown()
 	#endif
 	S_Shutdown();
 	IN_Shutdown();
-	VID_Shutdown();
+	R_finalize();
 }

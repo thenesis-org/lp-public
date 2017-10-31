@@ -412,6 +412,29 @@ static int MenuOptions_defaults_init(int y)
 }
 
 //----------------------------------------
+// Save configuration.
+//----------------------------------------
+static menuaction_s MenuOptions_save_action;
+
+static void MenuOptions_save_callback(void *unused)
+{
+	CL_WriteConfiguration();
+}
+
+static int MenuOptions_save_init(int y)
+{
+	menuaction_s *action = &MenuOptions_save_action;
+	action->generic.type = MTYPE_ACTION;
+	action->generic.x = 0;
+	action->generic.y = y;
+	action->generic.name = "save config";
+	action->generic.callback = MenuOptions_save_callback;
+	Menu_AddItem(&MenuOptions_menu, (void *)action);
+	y += 10;
+	return y;
+}
+
+//----------------------------------------
 // Console.
 //----------------------------------------
 static menuaction_s MenuOptions_console_action;
@@ -482,6 +505,7 @@ static void MenuOptions_init()
 
 	y += 10;
 	y = MenuOptions_defaults_init(y);
+	y = MenuOptions_save_init(y);
 	y = MenuOptions_console_init(y);
 
 	Menu_CenterWithBanner(&MenuOptions_menu, "m_banner_options");

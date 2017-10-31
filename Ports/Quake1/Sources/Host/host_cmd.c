@@ -27,7 +27,7 @@
 #include "Common/sys.h"
 #include "Networking/net.h"
 #include "Networking/protocol.h"
-#include "Rendering/gl_model.h"
+#include "Rendering/r_model.h"
 #include "Server/server.h"
 #include "Server/world.h"
 
@@ -40,7 +40,7 @@ int current_skill;
 
 void Mod_Print();
 
-extern void M_Menu_Quit_f();
+extern void M_Quit_enter();
 
 void Host_Exit()
 {
@@ -53,7 +53,7 @@ void Host_Quit_f()
 {
 	if (key_dest != key_console && cls.state != ca_dedicated)
 	{
-		M_Menu_Quit_f();
+		M_Quit_enter();
 		return;
 	}
     Host_Exit();
@@ -81,7 +81,7 @@ void Host_Status_f()
 		print = SV_ClientPrintf;
 
 	print("host:    %s\n", Cvar_VariableString("hostname"));
-	print("version: %4.2f\n", VERSION);
+	print("version: %4.2f\n", QUAKE_HOST_VERSION);
 	print("tcp/ip:  %s\n", my_tcpip_address);
 	print("map:     %s\n", sv.name);
 	print("players: %i active (%i max)\n\n", net_activeconnections, svs.maxclients);
@@ -106,11 +106,7 @@ void Host_Status_f()
 }
 
 /*
-   ==================
-   Host_God_f
-
    Sets client to godmode
-   ==================
  */
 void Host_God_f()
 {
@@ -176,11 +172,7 @@ void Host_Noclip_f()
 }
 
 /*
-   ==================
-   Host_Fly_f
-
    Sets client to flymode
-   ==================
  */
 void Host_Fly_f()
 {
@@ -205,12 +197,6 @@ void Host_Fly_f()
 	}
 }
 
-/*
-   ==================
-   Host_Ping_f
-
-   ==================
- */
 void Host_Ping_f()
 {
 	int i, j;
@@ -245,18 +231,13 @@ void Host_Ping_f()
  */
 
 /*
-   ======================
-   Host_Map_f
-
    handle a
    map <servername>
    command from the console.  Active clients are kicked off.
-   ======================
  */
 void Host_Map_f()
 {
 	int i;
-	char name[MAX_QPATH];
 
 	if (cmd_source != src_command)
 		return;
@@ -272,37 +253,32 @@ void Host_Map_f()
 	cls.mapstring[0] = 0;
 	for (i = 0; i < Cmd_Argc(); i++)
 	{
-		strcat(cls.mapstring, Cmd_Argv(i));
-		strcat(cls.mapstring, " ");
+		Q_strncat(cls.mapstring, Cmd_Argv(i), MAX_QPATH);
+		Q_strncat(cls.mapstring, " ", MAX_QPATH);
 	}
-	strcat(cls.mapstring, "\n");
+	Q_strncat(cls.mapstring, "\n", MAX_QPATH);
 
 	svs.serverflags = 0; // haven't completed an episode yet
-	strcpy(name, Cmd_Argv(1));
+	char name[MAX_QPATH];
+	Q_strncpy(name, Cmd_Argv(1), MAX_QPATH);
 	SV_SpawnServer(name);
 	if (!sv.active)
 		return;
 
 	if (cls.state != ca_dedicated)
 	{
-		strcpy(cls.spawnparms, "");
-
+		Q_strncpy(cls.spawnparms, "", MAX_MAPSTRING);
 		for (i = 2; i < Cmd_Argc(); i++)
 		{
-			strcat(cls.spawnparms, Cmd_Argv(i));
-			strcat(cls.spawnparms, " ");
+			Q_strncat(cls.spawnparms, Cmd_Argv(i), MAX_MAPSTRING);
+			Q_strncat(cls.spawnparms, " ", MAX_MAPSTRING);
 		}
-
 		Cmd_ExecuteString("connect local", src_command);
 	}
 }
 
 /*
-   ==================
-   Host_Changelevel_f
-
    Goes to a new map, taking all clients along
-   ==================
  */
 void Host_Changelevel_f()
 {
@@ -324,11 +300,7 @@ void Host_Changelevel_f()
 }
 
 /*
-   ==================
-   Host_Restart_f
-
    Restarts the current server for a dead player
-   ==================
  */
 void Host_Restart_f()
 {
@@ -340,18 +312,14 @@ void Host_Restart_f()
 	if (cmd_source != src_command)
 		return;
 
-	strcpy(mapname, sv.name); // must copy out, because it gets cleared
+	Q_strncpy(mapname, sv.name, MAX_QPATH); // must copy out, because it gets cleared
 	// in sv_spawnserver
 	SV_SpawnServer(mapname);
 }
 
 /*
-   ==================
-   Host_Reconnect_f
-
    This command causes the client to wait for the signon messages again.
    This is sent just before a server changes levels
-   ==================
  */
 void Host_Reconnect_f()
 {
@@ -360,23 +328,18 @@ void Host_Reconnect_f()
 }
 
 /*
-   =====================
-   Host_Connect_f
-
    User command to connect to server
-   =====================
  */
 void Host_Connect_f()
 {
-	char name[MAX_QPATH];
-
 	cls.demonum = -1; // stop demo loop in case this fails
 	if (cls.demoplayback)
 	{
 		CL_StopPlayback();
 		CL_Disconnect();
 	}
-	strcpy(name, Cmd_Argv(1));
+	char name[MAX_QPATH];
+	Q_strncpy(name, Cmd_Argv(1), MAX_QPATH);
 	CL_EstablishConnection(name);
 	Host_Reconnect_f();
 }
@@ -392,11 +355,7 @@ void Host_Connect_f()
 #define SAVEGAME_VERSION 5
 
 /*
-   ===============
-   Host_SavegameComment
-
    Writes a SAVEGAME_COMMENT_LENGTH character comment describing the current
-   ===============
  */
 void Host_SavegameComment(char *text)
 {
@@ -416,11 +375,6 @@ void Host_SavegameComment(char *text)
 	text[SAVEGAME_COMMENT_LENGTH] = '\0';
 }
 
-/*
-   ===============
-   Host_Savegame_f
-   ===============
- */
 void Host_Savegame_f()
 {
 	char name[256];
@@ -512,15 +466,7 @@ void Host_Savegame_f()
 
 void Host_Loadgame_f()
 {
-	char name[MAX_OSPATH];
-	char mapname[MAX_QPATH];
-	float time, tfloat;
-	char str[32768], *start;
 	int i, r;
-	edict_t *ent;
-	int entnum;
-	int version;
-	float spawn_parms[NUM_SPAWN_PARMS];
 
 	if (cmd_source != src_command)
 		return;
@@ -533,7 +479,9 @@ void Host_Loadgame_f()
 
 	cls.demonum = -1; // stop demo loop in case this fails
 
-	sprintf(name, "%s/%s", com_writableGamedir, Cmd_Argv(1));
+	char name[MAX_OSPATH + 1];
+	snprintf(name, MAX_OSPATH, "%s/%s", com_writableGamedir, Cmd_Argv(1));
+    name[MAX_OSPATH] = 0;
 	COM_DefaultExtension(name, ".sav");
 
 	// we can't call SCR_BeginLoadingPlaque, because too much stack space has
@@ -548,6 +496,7 @@ void Host_Loadgame_f()
 		return;
 	}
 
+	int version;
 	fscanf(f, "%i\n", &version);
 	if (version != SAVEGAME_VERSION)
 	{
@@ -555,14 +504,23 @@ void Host_Loadgame_f()
 		Con_Printf("Savegame is version %i, not %i\n", version, SAVEGAME_VERSION);
 		return;
 	}
-	fscanf(f, "%s\n", str);
+    
+	char str[32768];
+	fscanf(f, "%32768s\n", str);
+    str[32767] = 0;
+    
+	float spawn_parms[NUM_SPAWN_PARMS];
 	for (i = 0; i < NUM_SPAWN_PARMS; i++)
 		fscanf(f, "%f\n", &spawn_parms[i]);
+        
 	// this silliness is so we can load 1.06 save files, which have float skill values
+	float tfloat;
 	fscanf(f, "%f\n", &tfloat);
 	current_skill = (int)(tfloat + 0.1f);
 	Cvar_SetValue("skill", (float)current_skill);
 
+	char mapname[MAX_QPATH + 1];
+	float time;
 	fscanf(f, "%s\n", mapname);
 	fscanf(f, "%f\n", &time);
 
@@ -584,11 +542,11 @@ void Host_Loadgame_f()
 	{
 		fscanf(f, "%s\n", str);
 		sv.lightstyles[i] = Hunk_Alloc(strlen(str) + 1);
-		strcpy(sv.lightstyles[i], str);
+		Q_strcpy(sv.lightstyles[i], str);
 	}
 
 	// load the edicts out of the savegame file
-	entnum = -1; // -1 is the globals
+	int entnum = -1; // -1 is the globals
 	while (!feof(f))
 	{
 		for (i = 0; i < (int)sizeof(str) - 1; i++)
@@ -606,7 +564,7 @@ void Host_Loadgame_f()
 		if (i == sizeof(str) - 1)
 			Sys_Error("Loadgame buffer overflow");
 		str[i] = 0;
-		start = COM_Parse(str);
+		char *start = COM_Parse(str);
 		if (!com_token[0])
 			break;             // end of file
 		if (strcmp(com_token, "{"))
@@ -618,7 +576,7 @@ void Host_Loadgame_f()
 		}
 		else     // parse an edict
 		{
-			ent = EDICT_NUM(entnum);
+            edict_t *ent = EDICT_NUM(entnum);
 			memset(&ent->v, 0, progs->entityfields * 4);
 			ent->free = false;
 			ED_ParseEdict(start, ent);
@@ -690,7 +648,7 @@ void Host_Name_f()
 
 void Host_Version_f()
 {
-	Con_Printf("Version %4.2f\n", VERSION);
+	Con_Printf("Version %4.2f\n", QUAKE_HOST_VERSION);
 	Con_Printf("Exe: "__TIME__ " "__DATE__ "\n");
 }
 
@@ -754,7 +712,6 @@ void Host_Say(qboolean teamonly)
 	client_t *save;
 	int j;
 	char *p;
-	char text[64];
 	qboolean fromServer = false;
 
 	if (cmd_source == src_command)
@@ -784,6 +741,8 @@ void Host_Say(qboolean teamonly)
 		p[Q_strlen(p) - 1] = 0;
 	}
 
+	char text[64];
+
 	// turn on color set 1
 	if (!fromServer)
 		sprintf(text, "%c%s: ", 1, save->name);
@@ -794,8 +753,8 @@ void Host_Say(qboolean teamonly)
 	if (Q_strlen(p) > j)
 		p[j] = 0;
 
-	strcat(text, p);
-	strcat(text, "\n");
+	Q_strncat(text, p, 64);
+	Q_strncat(text, "\n", 64);
 
 	for (j = 0, client = svs.clients; j < svs.maxclients; j++, client++)
 	{
@@ -827,7 +786,6 @@ void Host_Tell_f()
 	client_t *save;
 	int j;
 	char *p;
-	char text[64];
 
 	if (cmd_source == src_command)
 	{
@@ -838,8 +796,10 @@ void Host_Tell_f()
 	if (Cmd_Argc() < 3)
 		return;
 
-	Q_strcpy(text, host_client->name);
-	Q_strcat(text, ": ");
+	char text[64];
+
+	Q_strncpy(text, host_client->name, 64);
+	Q_strncat(text, ": ", 64);
 
 	p = Cmd_Args();
 
@@ -855,8 +815,8 @@ void Host_Tell_f()
 	if (Q_strlen(p) > j)
 		p[j] = 0;
 
-	strcat(text, p);
-	strcat(text, "\n");
+	Q_strncat(text, p, 64);
+	Q_strncat(text, "\n", 64);
 
 	save = host_client;
 	for (j = 0, client = svs.clients; j < svs.maxclients; j++, client++)
@@ -872,11 +832,6 @@ void Host_Tell_f()
 	host_client = save;
 }
 
-/*
-   ==================
-   Host_Color_f
-   ==================
- */
 void Host_Color_f()
 {
 	int top, bottom;
@@ -923,11 +878,6 @@ void Host_Color_f()
 	MSG_WriteByte(&sv.reliable_datagram, host_client->colors);
 }
 
-/*
-   ==================
-   Host_Kill_f
-   ==================
- */
 void Host_Kill_f()
 {
 	if (cmd_source == src_command)
@@ -947,11 +897,6 @@ void Host_Kill_f()
 	PR_ExecuteProgram(pr_global_struct->ClientKill);
 }
 
-/*
-   ==================
-   Host_Pause_f
-   ==================
- */
 void Host_Pause_f()
 {
 	if (cmd_source == src_command)
@@ -982,11 +927,6 @@ void Host_Pause_f()
 
 //===========================================================================
 
-/*
-   ==================
-   Host_PreSpawn_f
-   ==================
- */
 void Host_PreSpawn_f()
 {
 	if (cmd_source == src_command)
@@ -1123,11 +1063,6 @@ void Host_Spawn_f()
 	host_client->sendsignon = true;
 }
 
-/*
-   ==================
-   Host_Begin_f
-   ==================
- */
 void Host_Begin_f()
 {
 	if (cmd_source == src_command)
@@ -1142,11 +1077,7 @@ void Host_Begin_f()
 //===========================================================================
 
 /*
-   ==================
-   Host_Kick_f
-
    Kicks a user off of the server
-   ==================
  */
 void Host_Kick_f()
 {

@@ -1148,7 +1148,7 @@ void FS_SetGamedir(char *dir)
 	/* Flush all data, so it will be forced to reload. */
 	if ((dedicated != NULL) && (dedicated->value != 1))
 	{
-		Cbuf_AddText("vid_restart\nsnd_restart\n");
+		Cbuf_AddText("r_restart\nsnd_restart\n");
 	}
 
 	// FS_AddGameDirectories(dir) must be called before Cvar_FullSet("game", "", CVAR_LATCH | CVAR_SERVERINFO) because if dir point to the "game" string with the value BASEDIRNAME, it becomes "".

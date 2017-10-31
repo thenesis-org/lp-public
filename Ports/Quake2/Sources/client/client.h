@@ -49,7 +49,6 @@
 #include <ctype.h>
 
 #include "ref.h"
-#include "vid.h"
 #include "screen.h"
 #include "keyboard.h"
 #include "console.h"
@@ -467,6 +466,7 @@ void IN_CenterView();
 
 float CL_KeyState(kbutton_t *key);
 char* Key_KeynumToString(int keynum);
+void CL_WriteConfiguration();
 
 void CL_WriteDemoMessage();
 void CL_Stop_f();

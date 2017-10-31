@@ -186,11 +186,7 @@ void CL_Stop_f()
 }
 
 /*
-   ====================
-   CL_Record_f
-
    record <demoname> <map> [cd track]
-   ====================
  */
 void CL_Record_f()
 {
@@ -265,7 +261,6 @@ void CL_Record_f()
  */
 void CL_PlayDemo_f()
 {
-	char name[256];
 	int c;
 	qboolean neg = false;
 
@@ -286,7 +281,8 @@ void CL_PlayDemo_f()
 	//
 	// open the demo file
 	//
-	strcpy(name, Cmd_Argv(1));
+	char name[256];
+	Q_strncpy(name, Cmd_Argv(1), 256);
 	COM_DefaultExtension(name, ".dem");
 
 	Con_Printf("Playing demo from %s.\n", name);

@@ -264,6 +264,7 @@ void Sys_Quit()
 		logfile = NULL;
 	}
 
+	// change stdin to non blocking
 	fcntl(0, F_SETFL, fcntl(0, F_GETFL, 0) & ~O_NONBLOCK);
 
 	printf("------------------------------------\n");
@@ -276,7 +277,7 @@ void Sys_Error(char *error, ...)
 	va_list argptr;
 	char string[1024];
 
-	/* change stdin to non blocking */
+	// change stdin to non blocking
 	fcntl(0, F_SETFL, fcntl(0, F_GETFL, 0) & ~O_NONBLOCK);
 
 	#ifndef DEDICATED_ONLY
@@ -286,8 +287,12 @@ void Sys_Error(char *error, ...)
 	va_start(argptr, error);
 	vsnprintf(string, 1024, error, argptr);
 	va_end(argptr);
-	fprintf(stderr, "Error: %s\n", string);
+    string[1023] = 0;
+
+	fprintf(stderr, "Fatal error: %s\n", string);
 	
+	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Fatal error", string, NULL);
+
 	exit(1);
 }
 

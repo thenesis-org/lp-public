@@ -1,10 +1,3 @@
-/*
-   Some of this may not work. I'm not overly familiar with SDL, I just sort
-   of podged this together from the SDL headers, and the other cd-rom code.
-
-   Mark Baker <homer1@together.net>
- */
-
 #include <SDL2/SDL.h>
 
 #include "Common/cmd.h"

@@ -1,4 +1,4 @@
-Thenesis Quake 2 for GCW-Zero v1.1
+Thenesis Quake 2 v1.1 for GCW-Zero 
 
 This version is based on Yamagi Quake 2 v5.34.
 
@@ -25,6 +25,8 @@ Quake2/baseq2/pak2.pak
 Quake2/ctf/pak0.pak
 Quake2/rogue/pak0.pak
 Quake2/xatrix/pak0.pak
+
+Ensure that all pak file names are lower case !
 
 You can also use the demo version of Quake 2.
 In this case you have only one pak file:

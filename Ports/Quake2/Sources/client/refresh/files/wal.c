@@ -24,7 +24,7 @@
  * =======================================================================
  */
 
-#include "client/refresh/local.h"
+#include "client/refresh/r_private.h"
 
 image_t *
 LoadWal(char *origname)
@@ -46,7 +46,7 @@ LoadWal(char *origname)
 
 	if (!mt)
 	{
-		VID_Printf(PRINT_ALL, "LoadWall: can't load %s\n", name);
+		R_printf(PRINT_ALL, "LoadWall: can't load %s\n", name);
 		return r_notexture;
 	}
 

@@ -1,10 +1,9 @@
 #include "client/client.h"
-#include "client/refresh/local.h"
+#include "client/refresh/r_private.h"
 #include "client/menu/menu.h"
 
 #include "OpenGLES/EGLWrapper.h"
 
-extern qboolean graphics_support_msaa;
 extern cvar_t *cl_drawfps;
 
 static menuframework_s MenuGraphics_menu;
@@ -90,18 +89,18 @@ static void MenuGraphics_msaa_apply()
 	int value = list->curvalue;
 	if (value == 0)
 	{
-		if (gl_msaa_samples->value != 0)
+		if (r_msaa_samples->value != 0)
 		{
-			Cvar_SetValue("gl_msaa_samples", 0);
+			Cvar_SetValue("r_msaa_samples", 0);
 			MenuVideo_restartNeeded = true;
 		}
 	}
 	else
 	{
 		float valuePow = powf(2, value);
-		if (gl_msaa_samples->value != valuePow)
+		if (r_msaa_samples->value != valuePow)
 		{
-			Cvar_SetValue("gl_msaa_samples", valuePow);
+			Cvar_SetValue("r_msaa_samples", valuePow);
 			MenuVideo_restartNeeded = true;
 		}
 	}
@@ -133,13 +132,13 @@ static int MenuGraphics_msaa_init(int y)
 	list->generic.y = y;
 	list->itemnames = pow2_names;
 	list->curvalue = 0;
-	if (gl_msaa_samples->value)
+	if (r_msaa_samples->value)
 	{
 		do
 		{
 			list->curvalue++;
 		}
-		while (pow2_names[list->curvalue] && powf(2, list->curvalue) <= gl_msaa_samples->value);
+		while (pow2_names[list->curvalue] && powf(2, list->curvalue) <= r_msaa_samples->value);
 		list->curvalue--;
 	}
 	list->savedValue = list->curvalue;
@@ -233,7 +232,7 @@ static void MenuGraphics_discardFramebuffer_apply()
 {
 	menulist_s *list = &MenuGraphics_discardFramebuffer_list;
 	int value = list->curvalue;
-	Cvar_SetValue("gl_discardframebuffer", value);
+	Cvar_SetValue("r_discardframebuffer", value);
 }
 
 static void MenuGraphics_discardFramebuffer_callback(void *s)
@@ -245,11 +244,11 @@ static int MenuGraphics_discardFramebuffer_init(int y)
 {
 	menulist_s *list = &MenuGraphics_discardFramebuffer_list;
 	list->generic.type = MTYPE_SPINCONTROL;
-	list->generic.name = "discard framebuffer";
+	list->generic.name = "discard fb";
 	list->generic.x = 0;
 	list->generic.y = y;
 	list->itemnames = yesno_names;
-	list->curvalue = (gl_discardframebuffer->value != 0);
+	list->curvalue = r_discardframebuffer->value != 0;
 	list->savedValue = list->curvalue;
 	Menu_AddItem(&MenuGraphics_menu, (void *)list);
 	y += 10;
@@ -264,7 +263,7 @@ static menulist_s MenuGraphics_multitexturing_list;
 static void MenuGraphics_multitexturing_apply()
 {
 	menulist_s *list = &MenuGraphics_multitexturing_list;
-	Cvar_SetValue("gl_multitexturing", list->curvalue);
+	Cvar_SetValue("r_multitexturing", list->curvalue);
 }
 
 static void MenuGraphics_multitexturing_callback(void *s)
@@ -281,7 +280,7 @@ static int MenuGraphics_multitexturing_init(int y)
 	list->generic.y = y;
 	list->generic.callback = MenuGraphics_multitexturing_callback;
 	list->itemnames = yesno_names;
-	list->curvalue = (gl_multitexturing->value != 0);
+	list->curvalue = r_multitexturing->value != 0;
 	list->savedValue = list->curvalue;
 	Menu_AddItem(&MenuGraphics_menu, (void *)list);
 	y += 10;
@@ -307,13 +306,13 @@ static void MenuGraphics_filtering_apply()
 	{
 	default:
 	case MenuFilteringMode_Nearest:
-		Cvar_Set("gl_texturefilter", "GL_NEAREST_MIPMAP_NEAREST");
+		Cvar_Set("r_texture_filter", "GL_NEAREST_MIPMAP_NEAREST");
 		break;
 	case MenuFilteringMode_Bilinear:
-		Cvar_Set("gl_texturefilter", "GL_LINEAR_MIPMAP_NEAREST");
+		Cvar_Set("r_texture_filter", "GL_LINEAR_MIPMAP_NEAREST");
 		break;
 	case MenuFilteringMode_Trilinear:
-		Cvar_Set("gl_texturefilter", "GL_LINEAR_MIPMAP_LINEAR");
+		Cvar_Set("r_texture_filter", "GL_LINEAR_MIPMAP_LINEAR");
 		break;
 	}
 }
@@ -340,12 +339,12 @@ static int MenuGraphics_filtering_init(int y)
 	list->generic.callback = MenuGraphics_filtering_callback;
 	list->itemnames = texture_filtering_names;
 	{
-		if (Q_stricmp("GL_LINEAR_MIPMAP_LINEAR", gl_texturefilter->string) == 0)
+		if (Q_stricmp("GL_LINEAR_MIPMAP_LINEAR", r_texture_filter->string) == 0)
 		{
 			list->curvalue = MenuFilteringMode_Trilinear;
 		}
 		else
-		if (Q_stricmp("GL_LINEAR_MIPMAP_NEAREST", gl_texturefilter->string) == 0)
+		if (Q_stricmp("GL_LINEAR_MIPMAP_NEAREST", r_texture_filter->string) == 0)
 		{
 			list->curvalue = MenuFilteringMode_Bilinear;
 		}
@@ -370,11 +369,11 @@ static void MenuGraphics_anisotropicFiltering_apply()
 	menulist_s *list = (menulist_s *)&MenuGraphics_anisotropicFiltering_list;
 	if (list->curvalue == 0)
 	{
-		Cvar_SetValue("gl_anisotropic", 0);
+		Cvar_SetValue("r_texture_anisotropy", 0);
 	}
 	else
 	{
-		Cvar_SetValue("gl_anisotropic", pow(2, list->curvalue));
+		Cvar_SetValue("r_texture_anisotropy", pow(2, list->curvalue));
 	}
 }
 
@@ -410,13 +409,13 @@ static int MenuGraphics_anisotropicFiltering_init(int y)
 	list->generic.callback = MenuGraphics_anisotropicFiltering_callback;
 	list->itemnames = pow2_names;
 	list->curvalue = 0;
-	if (gl_anisotropic->value)
+	if (r_texture_anisotropy->value)
 	{
 		do
 		{
 			list->curvalue++;
 		}
-		while (pow2_names[list->curvalue] && powf(2, list->curvalue) <= gl_anisotropic->value);
+		while (pow2_names[list->curvalue] && powf(2, list->curvalue) <= r_texture_anisotropy->value);
 		list->curvalue--;
 	}
 	list->savedValue = list->curvalue;
@@ -615,92 +614,101 @@ static int MenuGraphics_shadowMode_init(int y)
 }
 
 //----------------------------------------
-// Lighting.
+// Lightmap.
 //----------------------------------------
-typedef enum
-{
-	MenuLightingMode_Static, // Nothing is dynamically lighted.
-	MenuLightingMode_FlashBlend, // Use only flash blends.
-	MenuLightingMode_DynamicFlashBlend, // World is dynamically lighted only with animated lights. All other things use flash blends.
-	MenuLightingMode_Dynamic, // All is dynamically lighted.
-} MenuLightingMode;
+static menulist_s MenuGraphics_lightmap_list;
 
-static menulist_s MenuGraphics_lighting_list;
-
-static void MenuGraphics_lighting_apply()
+static void MenuGraphics_lightmap_apply()
 {
-	menulist_s *list = &MenuGraphics_lighting_list;
-	MenuLightingMode lightingMode = (MenuLightingMode)list->curvalue;
-	switch (lightingMode)
-	{
-	case MenuLightingMode_Static:
-		Cvar_SetValue("gl_dynamic", 0);
-		Cvar_SetValue("gl_flashblend", 0);
-		break;
-	case MenuLightingMode_FlashBlend:
-		Cvar_SetValue("gl_dynamic", 0);
-		Cvar_SetValue("gl_flashblend", 1);
-		break;
-	case MenuLightingMode_DynamicFlashBlend:
-		Cvar_SetValue("gl_dynamic", 1);
-		Cvar_SetValue("gl_flashblend", 1);
-		break;
-	default:
-	case MenuLightingMode_Dynamic:
-		Cvar_SetValue("gl_dynamic", 1);
-		Cvar_SetValue("gl_flashblend", 0);
-		break;
-	}
+	menulist_s *list = &MenuGraphics_lightmap_list;
+    Cvar_SetValue("r_lightmap_dynamic", list->curvalue);
 }
 
-static void MenuGraphics_lighting_callback(void *s)
+static void MenuGraphics_lightmap_callback(void *s)
 {
-	MenuGraphics_lighting_apply();
+	MenuGraphics_lightmap_apply();
 }
 
-static int MenuGraphics_lighting_init(int y)
+static int MenuGraphics_lightmap_init(int y)
 {
-	static const char *lighting_names[] =
+	static const char *lightmap_names[] =
 	{
 		"static",
-		"flash blend",
-		"dynamic flash blend",
 		"dynamic",
 		0
 	};
-	menulist_s *list = &MenuGraphics_lighting_list;
+	menulist_s *list = &MenuGraphics_lightmap_list;
 	list->generic.type = MTYPE_SPINCONTROL;
-	list->generic.name = "lighting";
+	list->generic.name = "lightmap";
 	list->generic.x = 0;
 	list->generic.y = y;
-	list->generic.callback = MenuGraphics_lighting_callback;
-	list->itemnames = lighting_names;
-	{
-		MenuLightingMode lightingMode = 0;
-		if (gl_dynamic->value != 0)
-		{
-			if (gl_flashblend->value != 0)
-			{
-				lightingMode = MenuLightingMode_DynamicFlashBlend;
-			}
-			else
-			{
-				lightingMode = MenuLightingMode_Dynamic;
-			}
-		}
-		else
-		{
-			if (gl_flashblend->value != 0)
-			{
-				lightingMode = MenuLightingMode_FlashBlend;
-			}
-			else
-			{
-				lightingMode = MenuLightingMode_Static;
-			}
-		}
-		list->curvalue = lightingMode;
-	}
+	list->generic.callback = MenuGraphics_lightmap_callback;
+	list->itemnames = lightmap_names;
+	list->curvalue = r_lightmap_dynamic->value != 0;
+	list->savedValue = list->curvalue;
+	Menu_AddItem(&MenuGraphics_menu, (void *)list);
+	y += 10;
+	return y;
+}
+
+//----------------------------------------
+// Lightmap dynamic lighting of backfaces.
+//----------------------------------------
+static menulist_s MenuGraphics_backface_lighting_list;
+
+static void MenuGraphics_backface_lighting_apply()
+{
+	menulist_s *list = &MenuGraphics_backface_lighting_list;
+    Cvar_SetValue("r_lightmap_backface_lighting", list->curvalue);
+}
+
+static void MenuGraphics_backface_lighting_callback(void *s)
+{
+	MenuGraphics_backface_lighting_apply();
+}
+
+static int MenuGraphics_backface_lighting_init(int y)
+{
+	menulist_s *list = &MenuGraphics_backface_lighting_list;
+	list->generic.type = MTYPE_SPINCONTROL;
+	list->generic.name = "backface lighting";
+	list->generic.x = 0;
+	list->generic.y = y;
+	list->generic.callback = MenuGraphics_backface_lighting_callback;
+	list->itemnames = yesno_names;
+    list->curvalue = r_lightmap_backface_lighting->value != 0;
+	list->savedValue = list->curvalue;
+	Menu_AddItem(&MenuGraphics_menu, (void *)list);
+	y += 10;
+	return y;
+}
+
+//----------------------------------------
+// Light flash.
+//----------------------------------------
+static menulist_s MenuGraphics_lightflash_list;
+
+static void MenuGraphics_lightflash_apply()
+{
+	menulist_s *list = &MenuGraphics_lightflash_list;
+    Cvar_SetValue("r_lightflash", list->curvalue);
+}
+
+static void MenuGraphics_lightflash_callback(void *s)
+{
+	MenuGraphics_lightflash_apply();
+}
+
+static int MenuGraphics_lightflash_init(int y)
+{
+	menulist_s *list = &MenuGraphics_lightflash_list;
+	list->generic.type = MTYPE_SPINCONTROL;
+	list->generic.name = "light flash";
+	list->generic.x = 0;
+	list->generic.y = y;
+	list->generic.callback = MenuGraphics_lightflash_callback;
+	list->itemnames = yesno_names;
+    list->curvalue = r_lightflash->value != 0;
 	list->savedValue = list->curvalue;
 	Menu_AddItem(&MenuGraphics_menu, (void *)list);
 	y += 10;
@@ -715,7 +723,7 @@ static menulist_s MenuGraphics_flash_list;
 static void MenuGraphics_flash_apply()
 {
 	menulist_s *list = &MenuGraphics_flash_list;
-	Cvar_SetValue("gl_fullscreenflash", list->curvalue);
+	Cvar_SetValue("r_fullscreenflash", list->curvalue);
 }
 
 static void MenuGraphics_flash_callback(void *s)
@@ -732,7 +740,7 @@ static int MenuGraphics_flash_init(int y)
 	list->generic.y = y;
 	list->generic.callback = MenuGraphics_flash_callback;
 	list->itemnames = yesno_names;
-	list->curvalue = (gl_fullscreenflash->value != 0);
+	list->curvalue = (r_fullscreenflash->value != 0);
 	list->savedValue = list->curvalue;
 	Menu_AddItem(&MenuGraphics_menu, (void *)list);
 	y += 10;
@@ -744,9 +752,16 @@ static int MenuGraphics_flash_init(int y)
 //----------------------------------------
 static void MenuGraphics_draw()
 {
+   	menuframework_s *menu = &MenuGraphics_menu;
+
+    // Need to be updated because the window size could have changed.
+	menu->x = viddef.width >> 1;
+    Menu_CenterWithBanner(menu, "m_banner_video");
+	menu->x -= 8;
+
 	M_Banner("m_banner_video");
-	Menu_AdjustCursor(&MenuGraphics_menu, 1);
-	Menu_Draw(&MenuGraphics_menu);
+	Menu_AdjustCursor(menu, 1);
+	Menu_Draw(menu);
 }
 
 static const char* MenuGraphics_key(int key, int keyUnmodified)
@@ -760,12 +775,12 @@ void MenuGraphics_init()
 
 	menuframework_s *menu = &MenuGraphics_menu;
 	memset(menu, 0, sizeof(menuframework_s));
-	MenuGraphics_menu.x = viddef.width * 0.5f;
+	MenuGraphics_menu.x = viddef.width >> 1;
 	MenuGraphics_menu.nitems = 0;
 
 	y = MenuGraphics_showfps_init(y);
 	y = MenuGraphics_vsync_init(y);
-	if (graphics_support_msaa)
+	if (r_msaaAvailable)
 	{
 		y = MenuGraphics_msaa_init(y);
 	}
@@ -785,7 +800,9 @@ void MenuGraphics_init()
 	#endif
 	y = MenuGraphics_particleSize_init(y);
 	y = MenuGraphics_shadowMode_init(y);
-	y = MenuGraphics_lighting_init(y);
+	y = MenuGraphics_lightmap_init(y);
+    y = MenuGraphics_backface_lighting_init(y);
+	y = MenuGraphics_lightflash_init(y);
 	y = MenuGraphics_flash_init(y);
 
 	Menu_CenterWithBanner(&MenuGraphics_menu, "m_banner_video");
@@ -801,7 +818,7 @@ void MenuGraphics_apply()
 {
 	MenuGraphics_showfps_apply();
 	MenuGraphics_vsync_apply();
-	if (graphics_support_msaa)
+	if (r_msaaAvailable)
 	{
 		MenuGraphics_msaa_apply();
 	}
@@ -818,6 +835,8 @@ void MenuGraphics_apply()
 	#endif
 	MenuGraphics_particleSize_apply();
 	MenuGraphics_shadowMode_apply();
-	MenuGraphics_lighting_apply();
+	MenuGraphics_lightmap_apply();
+    MenuGraphics_backface_lighting_apply();
+	MenuGraphics_lightflash_apply();
 	MenuGraphics_flash_apply();
 }

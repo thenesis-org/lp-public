@@ -58,10 +58,9 @@ void oglwRotate(float angle, float x, float y, float z);
 // Enable smooth shading.
 void oglwEnableSmoothShading(bool flag);
 
-// Set the current unit.
 void oglwSetCurrentTextureUnitForced(int unit);
 // Set the current unit.
-//void oglwSetCurrentTextureUnit(int unit);
+void oglwSetCurrentTextureUnit(int unit);
 // Bind the texture immediately.
 void oglwBindTextureForced(int unit, GLuint texture);
 // Bind the texture for the next oglwBegin() / oglwEnd().

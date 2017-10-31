@@ -442,11 +442,6 @@ void SV_ClientThink()
 	SV_AirMove();
 }
 
-/*
-   ===================
-   SV_ReadClientMove
-   ===================
- */
 void SV_ReadClientMove(usercmd_t *move)
 {
 	int i;
@@ -480,11 +475,7 @@ void SV_ReadClientMove(usercmd_t *move)
 }
 
 /*
-   ===================
-   SV_ReadClientMessage
-
    Returns false if the client should be killed
-   ===================
  */
 qboolean SV_ReadClientMessage()
 {

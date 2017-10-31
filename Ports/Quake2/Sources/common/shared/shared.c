@@ -557,18 +557,19 @@ void CrossProduct(vec3_t v1, vec3_t v2, vec3_t cross)
 
 vec_t VectorLength(vec3_t v)
 {
-	int i;
-	float length;
-
-	length = 0;
-
-	for (i = 0; i < 3; i++)
-	{
-		length += v[i] * v[i];
-	}
-
+	float length = v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
 	length = sqrtf(length);
+	return length;
+}
 
+vec_t VectorDistance(vec3_t v0, vec3_t v1)
+{
+    vec3_t v;
+    v[0] = v1[0] - v0[0];
+    v[1] = v1[1] - v0[1];
+    v[2] = v1[2] - v0[2];
+	float length = v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
+	length = sqrtf(length);
 	return length;
 }
 

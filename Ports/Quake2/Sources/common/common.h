@@ -26,14 +26,14 @@
  * =======================================================================
  */
 
-#ifndef CO_COMMON_H
-#define CO_COMMON_H
+#ifndef common_h
+#define common_h
 
 #include "common/crc.h"
 #include "common/shared/shared.h"
 
 /* Should have 4 characters. */
-#define QUAKE2_VERSION_NAME "1.0"
+#define QUAKE2_VERSION_NAME "1.1"
 #define QUAKE2_TEAM_NAME "Thenesis"
 #define QUAKE2_COMPLETE_NAME QUAKE2_TEAM_NAME " Quake II v" QUAKE2_VERSION_NAME
 #define BASEDIRNAME "baseq2"

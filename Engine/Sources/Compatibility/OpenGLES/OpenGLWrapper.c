@@ -851,12 +851,10 @@ void oglwSetCurrentTextureUnitForced(int unit) {
     }
 }
 
-/*
 void oglwSetCurrentTextureUnit(int unit) {
     OpenGLWrapper *oglw = l_openGLWrapper;
     oglw->textureUnitRequested=unit;
 }
-*/
  
 void oglwBindTextureForced(int unit, GLuint texture) {
     OpenGLWrapper *oglw = l_openGLWrapper;
@@ -1430,6 +1428,8 @@ GLushort* oglwAllocateIndex(int indexNb) {
 OglwVertex* oglwAllocateLineStrip(int vertexNb) {
     OpenGLWrapper *oglw = l_openGLWrapper;
     int lineNb = vertexNb-1;
+    if (lineNb <= 0)
+        return NULL;
 
     GLushort *index = oglwAllocateIndex(lineNb*2);
     if (index == NULL) goto on_error;
@@ -1452,6 +1452,8 @@ on_error:
 OglwVertex* oglwAllocateLineLoop(int vertexNb) {
     OpenGLWrapper *oglw = l_openGLWrapper;
     int lineNb = vertexNb-1;
+    if (lineNb <= 0)
+        return NULL;
 
     GLushort *index = oglwAllocateIndex((lineNb+1)*2);
     if (index == NULL) goto on_error;
@@ -1476,6 +1478,8 @@ on_error:
 OglwVertex* oglwAllocateQuad(int vertexNb) {
     OpenGLWrapper *oglw = l_openGLWrapper;
     int quadNb = vertexNb>>2;
+    if (quadNb <= 0)
+        return NULL;
 
     int vertexLengthLast = oglw->verticesLength;
     GLushort *index = oglwAllocateIndex(quadNb*6);
@@ -1502,6 +1506,8 @@ on_error:
 OglwVertex* oglwAllocateTriangleFan(int vertexNb) {
     OpenGLWrapper *oglw = l_openGLWrapper;
     int triangleNb = vertexNb-2;
+    if (triangleNb <= 0)
+        return NULL;
 
     int vertexLengthLast = oglw->verticesLength;
     GLushort *index = oglwAllocateIndex(triangleNb*3);
@@ -1525,6 +1531,8 @@ on_error:
 OglwVertex* oglwAllocateTriangleStrip(int vertexNb) {
     OpenGLWrapper *oglw = l_openGLWrapper;
     int triangleNb = vertexNb-2;
+    if (triangleNb <= 0)
+        return NULL;
 
     GLushort *index = oglwAllocateIndex(triangleNb*3);
     if (index == NULL) goto on_error;

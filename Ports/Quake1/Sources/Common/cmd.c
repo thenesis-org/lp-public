@@ -266,35 +266,18 @@ void Cmd_Exec_f()
 	Hunk_FreeToLowMark(mark);
 }
 
-/*
-   ===============
-   Cmd_Echo_f
-
-   Just prints the rest of the line to the console
-   ===============
- */
+// Just prints the rest of the line to the console
 void Cmd_Echo_f()
 {
-	int i;
-
-	for (i = 1; i < Cmd_Argc(); i++)
+	for (int i = 1; i < Cmd_Argc(); i++)
 		Con_Printf("%s ", Cmd_Argv(i));
 	Con_Printf("\n");
 }
 
-/*
-   ===============
-   Cmd_Alias_f
-
-   Creates a new command that executes a command string (possibly ; seperated)
-   ===============
- */
-
+// Creates a new command that executes a command string (possibly ; seperated)
 char* CopyString(char *in)
 {
-	char *out;
-
-	out = Z_Malloc(strlen(in) + 1);
+	char *out = Z_Malloc(strlen(in) + 1);
 	strcpy(out, in);
 	return out;
 }
@@ -302,7 +285,6 @@ char* CopyString(char *in)
 void Cmd_Alias_f()
 {
 	cmdalias_t *a;
-	char cmd[1024];
 	int i, c;
 	char *s;
 
@@ -337,18 +319,19 @@ void Cmd_Alias_f()
 		a->next = cmd_alias;
 		cmd_alias = a;
 	}
-	strcpy(a->name, s);
+	Q_strncpy(a->name, s, MAX_ALIAS_NAME);
 
 	// copy the rest of the command line
+	char cmd[1024];
 	cmd[0] = 0; // start out with a null string
 	c = Cmd_Argc();
 	for (i = 2; i < c; i++)
 	{
-		strcat(cmd, Cmd_Argv(i));
+		Q_strncat(cmd, Cmd_Argv(i), 1024);
 		if (i != c)
-			strcat(cmd, " ");
+			Q_strncat(cmd, " ", 1024);
 	}
-	strcat(cmd, "\n");
+	Q_strncat(cmd, "\n", 1024);
 
 	a->value = CopyString(cmd);
 }

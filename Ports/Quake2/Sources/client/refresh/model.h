@@ -88,27 +88,25 @@ typedef struct msurface_s
 	int firstedge; /* look up in model->surfedges[], negative numbers */
 	int numedges; /* are backwards edges */
 
-	short texturemins[2];
+	glpoly_t *polys; /* multiple if warped */
 	short extents[2];
 
-	short light_s, light_t; /* gl lightmap coordinates */
-	short dlight_s, dlight_t; /* gl lightmap coordinates for dynamic lightmaps */
-
-	glpoly_t *polys; /* multiple if warped */
 	struct  msurface_s *texturechain;
-	struct  msurface_s *lightmapchain;
-
 	mtexinfo_t *texinfo;
 	image_t *current_image;
+	short texturemins[2];
+    int alpha;
 
-	/* lighting info */
-	int dlightframe;
-	int dlightbits;
-
+	struct  msurface_s *lightmapchain;
 	int lightmaptexturenum;
+	short light_s, light_t; /* gl lightmap coordinates */
 	byte styles[MAXLIGHTMAPS];
 	float cached_light[MAXLIGHTMAPS]; /* values currently used in lightmap */
 	byte *samples; /* [numstyles*surfsize] */
+
+	short dlight_s, dlight_t; /* gl lightmap coordinates for dynamic lightmaps */
+	int dlightframe;
+	int dlightbits;
 } msurface_t;
 
 typedef struct mnode_s
@@ -223,12 +221,10 @@ byte* Mod_ClusterPVS(int cluster, model_t *model);
 
 void Mod_Modellist_f(void);
 
-void* Hunk_Begin(int maxsize);
-void* Hunk_Alloc(int size);
-int Hunk_End(void);
-void Hunk_Free(void *base);
-
 void Mod_FreeAll(void);
 void Mod_Free(model_t *mod);
+
+void LoadSP2(model_t *mod, void *buffer, int modfilelen);
+void LoadMD2(model_t *mod, void *buffer);
 
 #endif

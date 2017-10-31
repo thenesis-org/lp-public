@@ -10,8 +10,8 @@
 #define FREQUENCY_DEFAULT (11025)
 #define BUFFER_SIZE (2048)
 
-static SDL_AudioDeviceID l_audioDevice = 0;
-static int underflows = 0;
+static SDL_AudioDeviceID s_device = 0;
+static int s_underflows = 0;
 
 static void Audio_paint(void *userData, Uint8 *stream, int len)
 {
@@ -30,7 +30,7 @@ static void Audio_paint(void *userData, Uint8 *stream, int len)
         if (loopFrameToRead <= 0)
         {
             // Underflow. Fill the remaining with silence.
-            underflows++;
+            s_underflows++;
             loopFrameToRead = frameToRead;
             loopSizeToCopy = loopFrameToRead  << 2;
             memset(stream, 0, loopSizeToCopy);
@@ -50,7 +50,7 @@ static void Audio_paint(void *userData, Uint8 *stream, int len)
     }
 }
 
-qboolean Audio_initialize()
+bool Audio_initialize()
 {
     Audio_finalize();
 
@@ -75,7 +75,7 @@ qboolean Audio_initialize()
             Con_Printf("Couldn't open SDL audio: %s\n", SDL_GetError());
             goto on_error;
         }
-        l_audioDevice = audioDevice;
+        s_device = audioDevice;
 
         audio->channels = obtained.channels;
         audio->samplebits = (obtained.format & 0xFF);
@@ -95,11 +95,11 @@ on_error:
 
 void Audio_finalize()
 {
-    SDL_AudioDeviceID audioDevice = l_audioDevice;
+    SDL_AudioDeviceID audioDevice = s_device;
     if (audioDevice)
     {
 		SDL_CloseAudioDevice(audioDevice);
-        l_audioDevice = 0;
+        s_device = 0;
     }
     
     Audio *audio = g_audio;

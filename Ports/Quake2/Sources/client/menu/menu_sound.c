@@ -28,7 +28,7 @@ static void MenuSound_soundQuality_apply()
 	M_Popup();
 
 	/* the text box won't show up unless we do a buffer swap */
-	Renderer_EndFrame();
+	R_Frame_end();
 
 	CL_Snd_Restart_f();
 }

@@ -27,7 +27,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#define QUAKE_VERSION_NAME "0.5"
+#define QUAKE_VERSION_NAME "1.0"
 #define QUAKE_TEAM_NAME "Thenesis"
 #define QUAKE_COMPLETE_NAME QUAKE_TEAM_NAME " Quake v" QUAKE_VERSION_NAME
 
@@ -69,6 +69,7 @@ void Q_strncpy(char *dest, char *src, int count);
 int Q_strlen(char *str);
 char* Q_strrchr(char *s, char c);
 void Q_strcat(char *dest, char *src);
+void Q_strncat(char *dest, char *src, int count);
 int Q_strcmp(char *s1, char *s2);
 int Q_strncmp(char *s1, char *s2, int count);
 int Q_strcasecmp(char *s1, char *s2);
@@ -78,8 +79,8 @@ float Q_atof(char *str);
 
 #define MAX_NUM_ARGVS 50
 
-#define MAX_OSPATH 128 // max length of a filesystem pathname
-#define MAX_QPATH 64 // max length of a quake game pathname
+#define MAX_OSPATH 511 // max length of a filesystem pathname
+#define MAX_QPATH 511 // max length of a quake game pathname
 
 //============================================================================
 
@@ -159,7 +160,7 @@ void COM_InitArgv(int argc, char **argv);
 
 char* COM_SkipPath(char *pathname);
 void COM_StripExtension(char *in, char *out);
-void COM_FileBase(char *in, char *out);
+void COM_FileBase(char *in, char *out, int size);
 void COM_DefaultExtension(char *path, char *extension);
 
 char* va(char *format, ...);
@@ -170,8 +171,8 @@ char* va(char *format, ...);
 extern int com_filesize;
 struct cache_user_s;
 
-extern char com_gamedir[MAX_OSPATH];
-extern char com_writableGamedir[MAX_OSPATH];
+extern char com_gamedir[MAX_OSPATH + 1];
+extern char com_writableGamedir[MAX_OSPATH + 1];
 
 char* Sys_GetHomeDir();
 

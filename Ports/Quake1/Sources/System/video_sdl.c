@@ -3,8 +3,8 @@
 #include "Client/input.h"
 #include "Common/quakedef.h"
 #include "Common/sys.h"
-#include "Rendering/glquake.h"
-#include "Rendering/vid.h"
+#include "Rendering/r_private.h"
+#include "Rendering/r_video.h"
 
 #include "SDL/SDLWrapper.h"
 #include "OpenGLES/EGLWrapper.h"
@@ -58,7 +58,7 @@ void VID_Init(unsigned char *palette)
 	if (COM_CheckParm("-fullscreen"))
 		flags |= SDL_WINDOW_FULLSCREEN;
 
-	if (sdlwCreateWindow("Thenesis Quake 1 v0.5", vid.width, vid.height, flags))
+	if (sdlwCreateWindow(QUAKE_COMPLETE_NAME, vid.width, vid.height, flags))
 		goto on_error;
 
 	// now know everything we need to know about the buffer
@@ -85,21 +85,7 @@ void VID_Init(unsigned char *palette)
 	gl_extensions = glGetString(GL_EXTENSIONS);
 	Con_Printf("GL_EXTENSIONS: %s\n", gl_extensions);
 
-	glClearColor(1, 0, 0, 0);
-
-	glCullFace(GL_FRONT);
-
-    oglwEnableSmoothShading(false);
-
-    oglwSetCurrentTextureUnitForced(0);
-	oglwEnableTexturing(0, true);
-
-	oglwSetBlendingFunction(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    oglwEnableAlphaTest(false);
-    oglwSetAlphaFunc(GL_GREATER, 0.666f);
-
-    oglwSetTextureBlending(0, GL_REPLACE);
+	r_stencilAvailable = (eglwContext->configInfo.stencilSize > 0);
 
 	SDL_ShowCursor(0);
 	return;
@@ -120,7 +106,7 @@ void VID_Shutdown()
 	sdlwFinalize();
 }
 
-void GL_BeginRendering(int *x, int *y, int *width, int *height)
+void R_beginRendering(int *x, int *y, int *width, int *height)
 {
 	*x = *y = 0;
 	*width = sdlwContext->windowWidth;
@@ -128,7 +114,7 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 	oglwSetViewport(*x, *y, *width, *height);
 }
 
-void GL_EndRendering()
+void R_endRendering()
 {
 	eglwSwapBuffers();
 }

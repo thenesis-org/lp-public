@@ -29,8 +29,8 @@
 #include "Common/zone.h"
 #include "Networking/net.h"
 #include "Networking/protocol.h"
-#include "Rendering/gl_model.h"
-#include "Rendering/render.h"
+#include "Rendering/r_model.h"
+#include "Rendering/r_public.h"
 #include "Server/server.h"
 #include "Sound/sound.h"
 
@@ -390,7 +390,7 @@ void CL_RelinkEntities()
 		if (!ent->model) // empty slot
 		{
 			if (ent->forcelink)
-				R_RemoveEfrags(ent);              // just became empty
+				R_Efrag_remove(ent);              // just became empty
 			continue;
 		}
 

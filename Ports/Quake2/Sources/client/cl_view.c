@@ -25,6 +25,8 @@
  */
 
 #include "client/client.h"
+#include "client/ref.h"
+#include "client/refresh/r_private.h"
 
 /* development tools for weapons */
 int gun_frame;
@@ -76,10 +78,7 @@ void V_ClearScene()
 void V_AddEntity(entity_t *ent)
 {
 	if (r_numentities >= MAX_ENTITIES)
-	{
 		return;
-	}
-
 	r_entities[r_numentities++] = *ent;
 }
 
@@ -164,7 +163,7 @@ void V_TestParticles(void)
 /*
  * If cl_testentities is set, create 32 player models
  */
-void V_TestEntities(void)
+void V_TestEntities()
 {
 	int i, j;
 	float f, r;
@@ -339,7 +338,7 @@ void CL_PrepRefresh(void)
 	SCR_UpdateScreen();
 	rotate = (float)strtod(cl.configstrings[CS_SKYROTATE], (char **)NULL);
 	sscanf(cl.configstrings[CS_SKYAXIS], "%f %f %f", &axis[0], &axis[1], &axis[2]);
-	R_SetSky(cl.configstrings[CS_SKY], rotate, axis);
+	R_Sky_set(cl.configstrings[CS_SKY], rotate, axis);
 	Com_Printf("                                     \r");
 
 	/* the renderer can now free unneeded stuff */
@@ -433,17 +432,35 @@ void V_Gun_Model_f(void)
 
 int entitycmpfnc(const entity_t *a, const entity_t *b)
 {
-	/* all other models are sorted by model then skin */
-	if (a->model == b->model)
-	{
-		return (a->skin == b->skin) ? 0 :
-		       (a->skin > b->skin) ? 1 : -1;
-	}
-	else
-	{
-		return (a->model == b->model) ? 0 :
-		       (a->model > b->model) ? 1 : -1;
-	}
+    bool translucentAFlag = (a->flags & RF_TRANSLUCENT) != 0;
+    bool translucentBFlag = (b->flags & RF_TRANSLUCENT) != 0;
+    if (translucentAFlag == translucentBFlag)
+    {
+        #if 1
+        if (a->distanceFromCamera < b->distanceFromCamera)
+            return +1;
+        else if (a->distanceFromCamera > b->distanceFromCamera)
+            return -1;
+        else
+            return 0;
+        #else
+        /* all other models are sorted by model then skin */
+        if (a->model == b->model)
+        {
+            return (a->skin == b->skin) ? 0 :
+                   (a->skin > b->skin) ? 1 : -1;
+        }
+        else
+        {
+            return (a->model == b->model) ? 0 :
+                   (a->model > b->model) ? 1 : -1;
+        }
+        #endif
+    }
+    else if (translucentAFlag)
+        return +1;
+    else
+        return -1;
 }
 
 void V_RenderView(float stereo_separation)
@@ -534,10 +551,56 @@ void V_RenderView(float stereo_separation)
 
 		cl.refdef.rdflags = cl.frame.playerstate.rdflags;
 
+        int entityNb = r_numentities;
+        entity_t *entities = r_entities;
+        for (int entityIndex = 0; entityIndex < entityNb; entityIndex++)
+        {
+            entity_t *entity = &entities[entityIndex];
+            vec3_t origin;
+            VectorCopy(entity->origin, origin);
+
+            struct model_s *model = entity->model;
+            if (model && model->type == mod_brush)
+            {
+                VectorAdd(model->mins, origin, origin);
+            }
+
+            float distanceFromCamera = VectorDistance(origin, cl.refdef.vieworg);
+            entity->distanceFromCamera = distanceFromCamera;
+            #if 0
+            mtexinfo_t *texInfos = model->texinfo;
+            int texInfoNb = model->numtexinfo;
+            for (int texInfoIndex = 0; texInfoIndex < texInfoNb; texInfoIndex++)
+            {
+                mtexinfo_t *texInfo = &texInfos[texInfoIndex];
+                if (texInfo->flags & (SURF_TRANS33 | SURF_TRANS66))
+                {
+                    entity->flags |= RF_TRANSLUCENT;
+                    entity->alpha = 1.0f;
+                    break;
+                }
+            }
+            #endif
+        }
+
 		/* sort entities for better cache locality */
 		qsort(cl.refdef.entities, cl.refdef.num_entities,
 			sizeof(cl.refdef.entities[0]), (int (*)(const void *, const void *))
 			entitycmpfnc);
+
+        #if 0
+        int count=0;
+        for (int entityIndex = 0; entityIndex < entityNb; entityIndex++)
+        {
+            entity_t *entity = &entities[entityIndex];
+            if (entity->model && entity->model->type == mod_brush)
+            {
+                R_printf(0, "%f\n", entity->distanceFromCamera);
+                count++;
+            }
+        }
+        R_printf(0, "Count=%i\n", count);
+        #endif
 	}
 	else
 	if (cl.frame.valid && cl_paused->value && gl_stereo->value)
@@ -561,7 +624,8 @@ void V_RenderView(float stereo_separation)
 	cl.refdef.height = scr_vrect.height;
 	cl.refdef.fov_y = CalcFov(cl.refdef.fov_x, (float)cl.refdef.width, (float)cl.refdef.height);
 
-	R_RenderFrame(&cl.refdef);
+	R_View_draw(&cl.refdef);
+    R_View_setLightLevel();
 
 	if (cl_stats->value)
 		Com_Printf("ent:%i  lt:%i  part:%i\n", r_numentities, r_numdlights, r_numparticles);

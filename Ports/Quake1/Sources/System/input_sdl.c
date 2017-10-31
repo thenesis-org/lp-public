@@ -2,7 +2,7 @@
 #include "Client/input.h"
 #include "Client/keys.h"
 #include "Common/quakedef.h"
-#include "Rendering/glquake.h"
+#include "Rendering/r_private.h"
 
 #include "SDL/SDLWrapper.h"
 
@@ -384,8 +384,11 @@ bool IN_processEvent(SDL_Event *event)
     case SDL_KEYUP:
         {
             int key = IN_TranslateSDLtoQuakeKey(event->key.keysym.sym);
-            bool down = (event->type == SDL_KEYDOWN);
-            Key_Event(key, down);
+            if (key > 0)
+            {
+                bool down = (event->type == SDL_KEYDOWN);
+                Key_Event(key, down);
+            }
         }
         break;
 
@@ -452,7 +455,7 @@ void Sys_SendKeyEvents()
 	sdlwCheckEvents();
 
 	// Grab and ungrab the mouse if the console or the menu is opened.
-	qboolean want_grab = (vid_fullscreen.value || input_grab.value == 1 || (input_grab.value == 2 && mouse_windowed.value));
+	qboolean want_grab = (r_fullscreen.value || input_grab.value == 1 || (input_grab.value == 2 && mouse_windowed.value));
 	IN_Grab(want_grab);
 }
 
@@ -660,10 +663,59 @@ void IN_Init()
 	Cvar_RegisterVariable(&mouse_speed_side);
 	Cvar_RegisterVariable(&mouse_speed_pitch);
 	Cvar_RegisterVariable(&mouse_speed_yaw);
+
+	if (!SDL_WasInit(SDL_INIT_JOYSTICK))
+	{
+		if (SDL_Init(SDL_INIT_JOYSTICK) == -1)
+		{
+			Con_Printf("Couldn't init SDL l_joystick: %s.\n", SDL_GetError());
+		}
+		else
+		{
+			if (SDL_NumJoysticks() > 0)
+			{
+				int n = SDL_NumJoysticks();
+				for (int i = 0; i < n; i++)
+				{
+					if (SDL_IsGameController(i))
+					{
+						if (!l_controller)
+						{
+							l_controller = SDL_GameControllerOpen(i);
+							if (!l_controller)
+							{
+								Con_Printf("Could not open gamecontroller %i: %s\n", i, SDL_GetError());
+							}
+						}
+					}
+					else
+					{
+						if (!l_joystick)
+						{
+							l_joystick = SDL_JoystickOpen(i);
+							if (!l_joystick)
+							{
+								Con_Printf("Could not open l_joystick %i: %s\n", i, SDL_GetError());
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 void IN_Shutdown()
 {
+	if (SDL_WasInit(SDL_INIT_JOYSTICK))
+	{
+		if (SDL_JoystickGetAttached(l_joystick))
+		{
+			SDL_JoystickClose(l_joystick);
+			l_joystick = NULL;
+		}
+		SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
+	}
 }
 
 void IN_Grab(qboolean grab)

@@ -31,7 +31,7 @@ extern char *menu_move_sound;
 extern char *menu_out_sound;
 extern qboolean m_entersound; // play after drawing a frame, so caching won't disrupt the sound
 
-extern qboolean MenuVideo_restartNeeded;
+extern bool MenuVideo_restartNeeded;
 
 extern menuframework_s s_multiplayer_menu;
 

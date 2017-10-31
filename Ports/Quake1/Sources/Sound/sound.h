@@ -62,9 +62,8 @@ typedef struct
 
 extern Audio *g_audio;
 
-qboolean Audio_initialize();
+bool Audio_initialize();
 void Audio_finalize();
-
 
 #define DEFAULT_SOUND_PACKET_VOLUME 255
 #define DEFAULT_SOUND_PACKET_ATTENUATION 1.0
@@ -75,51 +74,6 @@ typedef struct sfx_s
 	cache_user_t cache;
 } sfx_t;
 
-typedef struct
-{
-	int length;
-	int loopstart;
-	int speed;
-	int width;
-	int stereo;
-	byte data[1]; // variable sized
-} sfxcache_t;
-
-typedef struct
-{
-	sfx_t *sfx; // sfx number
-	int master_vol; // 0-255 master volume
-	int leftvol; // 0-255 volume
-	int rightvol; // 0-255 volume
-	int length; // length in sample frames
-	int pos; // sample position in sfx
-	int looping; // where to loop, -1 = no looping
-	int entnum; // to allow overriding a specific sound
-	int entchannel; //
-	vec3_t origin; // origin of sound effect
-	vec_t dist_mult; // distance multiplier (attenuation/clipK)
-} channel_t;
-
-typedef struct
-{
-	int rate;
-	int width;
-	int channels;
-	int loopstart;
-	int samples;
-	int dataofs; // chunk starts this many bytes from file start
-} wavinfo_t;
-
-// 0 to MAX_DYNAMIC_CHANNELS-1	= normal entity sounds
-// MAX_DYNAMIC_CHANNELS to MAX_DYNAMIC_CHANNELS + NUM_AMBIENTS -1 = water, etc
-// MAX_DYNAMIC_CHANNELS + NUM_AMBIENTS to total_channels = static sounds
-
-#define MAX_CHANNELS 128
-#define MAX_DYNAMIC_CHANNELS 8
-
-extern channel_t channels[MAX_CHANNELS];
-extern int total_channels;
-
 void S_Init();
 void S_Shutdown();
 void S_StartSound(int entnum, int entchannel, sfx_t *sfx, vec3_t origin, float fvol, float attenuation);
@@ -128,33 +82,22 @@ void S_StopSound(int entnum, int entchannel);
 void S_StopAllSounds(qboolean clear);
 void S_Update(vec3_t origin, vec3_t v_forward, vec3_t v_right, vec3_t v_up);
 void S_ExtraUpdate();
-void S_PaintChannels(int frameNb);
 
 sfx_t* S_PrecacheSound(char *sample);
 void S_TouchSound(char *sample);
 
-// picks a channel based on priorities, empty slots, number of channels
-channel_t* SND_PickChannel(int entnum, int entchannel);
-
-// spatializes a channel
-void SND_Spatialize(channel_t *ch);
-
-extern vec3_t listener_origin;
-extern vec3_t listener_forward;
-extern vec3_t listener_right;
-extern vec3_t listener_up;
-extern vec_t sound_nominal_clip_dist;
-
-extern cvar_t loadas8bit;
-extern cvar_t bgmvolume;
-extern cvar_t volume;
-
 void S_LocalSound(char *s);
-sfxcache_t* S_LoadSound(sfx_t *s);
 
-wavinfo_t GetWavinfo(char *name, byte *wav, int wavlength);
+int CDAudio_Init();
+void CDAudio_Play(byte track, qboolean looping);
+void CDAudio_Stop();
+void CDAudio_Pause();
+void CDAudio_Resume();
+void CDAudio_Shutdown();
+void CDAudio_Update();
 
-void S_AmbientOff();
-void S_AmbientOn();
+extern cvar_t s_loadas8bit;
+extern cvar_t s_bgmvolume;
+extern cvar_t s_volume;
 
 #endif

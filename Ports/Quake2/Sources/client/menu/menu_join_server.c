@@ -100,7 +100,7 @@ static void SearchLocalGames(void)
 	M_Popup();
 
 	/* the text box won't show up unless we do a buffer swap */
-	Renderer_EndFrame();
+	R_Frame_end();
 
 	/* send out info packets */
 	CL_PingServers_f();

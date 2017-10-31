@@ -1,1 +1,40 @@
-Quake for GCW-Zero
+Thenesis Quake v0.5 for GCW-Zero 
+
+This version is based on Quake v1.09 and GLQuake v1.0.
+
+You can put the data either in the internal or external SD card.
+Do not copy any .cfg file ! It may cause trouble.
+
+- For the internal SD card, put the data files in this path:
+  /media/data/Quake
+  This directory is searched wherever you put the OPK.
+- For the external SD card, you cannot use the OPK.
+  You must use the binary files directly and put them on the SD card along with the data in
+  /Quake
+
+Copy only the .pak files in their associated directory:
+- For original game, copy files in "baseq2" subdirectory.
+- For "Dissolution of Eternity mission pack", copy files in "rogue" subdirectory.
+- For "Scourge of Armagon mission pack", copy files in "hipnotic" subdirectory.
+
+With all mission packs you should have the following files:
+Quake/id1/pak0.pak
+Quake/id1/pak1.pak
+Quake/hipnotic/pak0.pak
+Quake/rogue/pak0.pak
+
+Ensure that all pak file names are lower case !
+
+You can also use the demo version of Quake.
+In this case you have only one pak file:
+Quake/id1/pak0.pak
+
+There is some hardwired cheat keys which are enabled when the power switch is on the lock position:
+- START: Enable cheats when creating a server.
+- LEFT: No target.
+- RIGHT: Give all weapons, ammos and items.
+- DOWN: Enable / disable no clipping mode.
+- UP: Enable / disable god mode.
+- LEFT TRIGGER: Enable / disable draw world.
+- RIGHT TRIGGER: Enable / disable light maps.
+

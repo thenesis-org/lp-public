@@ -528,7 +528,7 @@ static void PlayerConfig_MenuDraw()
 			refdef.width / (8 * scale), refdef.height / (8 * scale));
 		refdef.height += 4 * scale;
 
-		R_RenderFrame(&refdef);
+		R_View_draw(&refdef);
 
 		Com_sprintf(scratch, sizeof(scratch), "/players/%s/%s_i.pcx",
 			s_pmi[s_player_model_box.curvalue].directory,

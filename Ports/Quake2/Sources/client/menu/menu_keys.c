@@ -40,14 +40,14 @@ static char *bindnames[][2] =
 	{ "use HyperBlaster", "HyperBlaster" },
 	{ "use Railgun", "Railgun" },
 	{ "use BFG10K", "BFG10K" },
-	{ "use Trap", "Trap (xatrix)" },
-	{ "use IonRipper", "IonRipper (xatrix)" },
-	{ "use Phalanx", "Phalanx (xatrix)" },
-	{ "use ETF Rifle", "ETF Rifle (rogue)" },
-	{ "use Prox Launcher", "Prox Launcher (rogue)" },
-	{ "use Plasma Beam", "Plasma Beam (rogue)" },
-	{ "use Chainfist", "Chainfist (rogue)" },
-	{ "use Disruptor", "Disruptor (rogue)" },
+	{ "use Trap", "(xatrix) Trap" },
+	{ "use IonRipper", "(xatrix) IonRipper" },
+	{ "use Phalanx", "(xatrix) Phalanx" },
+	{ "use ETF Rifle", "(rogue) ETF Rifle" },
+	{ "use Prox Launcher", "(rogue) Prox Launcher" },
+	{ "use Plasma Beam", "(rogue) Plasma Beam" },
+	{ "use Chainfist", "(rogue) Chainfist" },
+	{ "use Disruptor", "(rogue) Disruptor" },
 
     { NULL, NULL },
 
@@ -62,14 +62,14 @@ static char *bindnames[][2] =
     { "use rebreather", "rebreather" },
     { "use environment suit", "environment suit" },
     { "use power shield", "power shield" },
-    { "use dualfire damage", "dualfire damage (xatrix)" },
-    { "use IR Goggles", "IR Goggles (rogue)" },
-    { "use Double Damage", "Double Damage (rogue)" },
-    { "use compass", "compass (rogue)" },
-    { "use vengeance sphere", "vengeance sphere (rogue)" },
-    { "use hunter sphere", "hunter sphere (rogue)" },
-    { "use defender sphere", "defender sphere (rogue)" },
-    { "use Doppleganger", "Doppleganger (rogue)" },
+    { "use dualfire damage", "(xatrix) dualfire damage" },
+    { "use IR Goggles", "(rogue) IR Goggles" },
+    { "use Double Damage", "(rogue) double Damage" },
+    { "use compass", "(rogue) compass" },
+    { "use vengeance sphere", "(rogue) vengeance sphere" },
+    { "use hunter sphere", "(rogue) hunter sphere" },
+    { "use defender sphere", "(rogue) defender sphere" },
+    { "use Doppleganger", "(rogue) doppleganger" },
 
     { NULL, NULL },
 
@@ -123,12 +123,12 @@ static char *bindnames[][2] =
 #define KEYS_PER_PAGE 25
 #define PAGE_NB ((NUM_BINDNAMES + KEYS_PER_PAGE - 1) / KEYS_PER_PAGE)
 
-static qboolean bind_grab;
+static qboolean MenuKeys_bindGrabFlag;
 
-static menuframework_s s_keys_menu;
-static menuaction_s s_keys_actions[NUM_BINDNAMES];
+static menuframework_s MenuKeys_menu;
+static menuaction_s MenuKeys_actions[NUM_BINDNAMES];
 
-static void M_UnbindCommand(char *command)
+static void MenuKeys_unbindCommand(char *command)
 {
 	int l = Q_strlen(command);
 	for (int j = 0; j < 256; j++)
@@ -141,7 +141,7 @@ static void M_UnbindCommand(char *command)
 	}
 }
 
-static void M_FindKeysForCommand(char *command, int *twokeys)
+static void MenuKeys_findKeysForCommand(char *command, int *twokeys)
 {
 	int l = Q_strlen(command);
 	int count = 0;
@@ -161,25 +161,25 @@ static void M_FindKeysForCommand(char *command, int *twokeys)
 	}
 }
 
-static void KeyCursorDrawFunc(menuframework_s *menu)
+static void MenuKeys_drawCursor(menuframework_s *menu)
 {
 	menucommon_s *item = Menu_ItemAtCursor(menu);
 	if (item)
 	{
 		float scale = SCR_GetMenuScale();
-		if (bind_grab)
+		if (MenuKeys_bindGrabFlag)
 			Draw_CharScaled(menu->x + item->x, (menu->y + item->y) * scale, '=', scale);
 		else
 			Draw_CharScaled(menu->x + item->x, (menu->y + item->y) * scale, 12 + ((int)(Sys_Milliseconds() / 250) & 1), scale);
 	}
 }
 
-static void DrawKeyBindingFunc(void *self)
+static void MenuKeys_drawKeyBinding(void *self)
 {
 	menuaction_s *a = (menuaction_s *)self;
 
 	int keys[2];
-	M_FindKeysForCommand(bindnames[a->generic.localdata[0]][0], keys);
+	MenuKeys_findKeysForCommand(bindnames[a->generic.localdata[0]][0], keys);
 
 	float scale = SCR_GetMenuScale();
 	Draw_CharBegin();
@@ -192,18 +192,14 @@ static void DrawKeyBindingFunc(void *self)
 	{
 		const char *name = Key_KeynumToString(keys[0]);
 
-		Menu_DrawString(a->generic.x + a->generic.parent->x + 16 * scale,
-			a->generic.y + a->generic.parent->y, name);
+		Menu_DrawString(a->generic.x + a->generic.parent->x + 16 * scale, a->generic.y + a->generic.parent->y, name);
 
 		int x = Q_strlen(name) * 8;
 
 		if (keys[1] != -1)
 		{
-			Menu_DrawString(a->generic.x + a->generic.parent->x + 24 * scale + (x * scale),
-				a->generic.y + a->generic.parent->y, "or");
-			Menu_DrawString(a->generic.x + a->generic.parent->x + 48 * scale + (x * scale),
-				a->generic.y + a->generic.parent->y,
-				Key_KeynumToString(keys[1]));
+			Menu_DrawString(a->generic.x + a->generic.parent->x + 24 * scale + (x * scale), a->generic.y + a->generic.parent->y, "or");
+			Menu_DrawString(a->generic.x + a->generic.parent->x + 48 * scale + (x * scale), a->generic.y + a->generic.parent->y, Key_KeynumToString(keys[1]));
 		}
 	}
 
@@ -219,64 +215,38 @@ static void MenuKeys_resetStatusBar(menuframework_s *menu)
 	#endif
 }
 
-static void KeyBindingFunc(void *self)
+static void MenuKeys_startBindingKey(void *self)
 {
 	menuaction_s *a = (menuaction_s *)self;
 	char *bindCommand = bindnames[a->generic.localdata[0]][0];
 
 	int keys[2];
-	M_FindKeysForCommand(bindCommand, keys);
+	MenuKeys_findKeysForCommand(bindCommand, keys);
 	if (keys[1] != -1)
-		M_UnbindCommand(bindCommand);
+		MenuKeys_unbindCommand(bindCommand);
 
-	bind_grab = true;
+	MenuKeys_bindGrabFlag = true;
 
 	#if defined(GAMEPAD_ONLY)
-	Menu_SetStatusBar(&s_keys_menu, "press a button for this action");
+	Menu_SetStatusBar(&MenuKeys_menu, "press a button for this action");
 	#else
-	Menu_SetStatusBar(&s_keys_menu, "press a key or button for this action");
+	Menu_SetStatusBar(&MenuKeys_menu, "press a key or button for this action");
 	#endif
 }
 
-static void Keys_MenuInit()
+static void MenuKeys_draw()
 {
-	menuframework_s *menu = &s_keys_menu;
-	memset(menu, 0, sizeof(menuframework_s));
-	menu->x = (int)(viddef.width * 0.50f);
-	menu->nitems = 0;
-	menu->cursordraw = KeyCursorDrawFunc;
-	menu->itemPerPageNb = KEYS_PER_PAGE;
-
-	for (int i = 0; i < NUM_BINDNAMES; i++)
-	{
-        menuaction_s *action = &s_keys_actions[i];
-        action->generic.type = bindnames[i][0] != NULL && bindnames[i][1] != NULL ? MTYPE_ACTION : MTYPE_SEPARATOR;
-        action->generic.flags = QMF_GRAYED;
-        action->generic.x = 0;
-        action->generic.y = ((i % KEYS_PER_PAGE) * 9);
-        action->generic.ownerdraw = DrawKeyBindingFunc;
-        action->generic.localdata[0] = i;
-        action->generic.name = bindnames[i][1];
-        Menu_AddItem(menu, (void *)action);
-	}
-
-    MenuKeys_resetStatusBar(menu);
-	Menu_Center(menu);
-}
-
-static void Keys_MenuDraw()
-{
-	menuframework_s *menu = &s_keys_menu;
+	menuframework_s *menu = &MenuKeys_menu;
 	Menu_AdjustCursor(menu, 1);
 	Menu_Draw(menu);
 }
 
-static const char* Keys_MenuKey(int key, int keyUnmodified)
+static const char* MenuKeys_key(int key, int keyUnmodified)
 {
-	menuframework_s *menu = &s_keys_menu;
+	menuframework_s *menu = &MenuKeys_menu;
 	menuaction_s *item = (menuaction_s *)Menu_ItemAtCursor(menu);
 
-	if (bind_grab)
+	if (MenuKeys_bindGrabFlag)
 	{
 		if (keyUnmodified > 0 && keyUnmodified != K_GAMEPAD_SELECT && keyUnmodified != K_ESCAPE)
 		{
@@ -286,7 +256,8 @@ static const char* Keys_MenuKey(int key, int keyUnmodified)
 		}
 
         MenuKeys_resetStatusBar(menu);
-		bind_grab = false;
+//        Menu_SetStatusBar(&MenuKeys_menu, Key_KeynumToString(keyUnmodified));
+		MenuKeys_bindGrabFlag = false;
 		return menu_out_sound;
 	}
 
@@ -296,14 +267,14 @@ static const char* Keys_MenuKey(int key, int keyUnmodified)
 	case K_JOY1:
 	case K_KP_ENTER:
 	case K_ENTER:
-		KeyBindingFunc(item);
+		MenuKeys_startBindingKey(item);
 		return menu_in_sound;
 
 	case K_GAMEPAD_Y:
 	case K_JOY3:
-	case K_BACKSPACE: /* delete bindings */
-	case K_DEL: /* delete bindings */
-		M_UnbindCommand(bindnames[item->generic.localdata[0]][0]);
+	case K_BACKSPACE:
+	case K_DEL:
+		MenuKeys_unbindCommand(bindnames[item->generic.localdata[0]][0]);
 		return menu_out_sound;
 
 	case K_GAMEPAD_LEFT:
@@ -327,8 +298,34 @@ static const char* Keys_MenuKey(int key, int keyUnmodified)
 	}
 }
 
+static void MenuKeys_init()
+{
+	menuframework_s *menu = &MenuKeys_menu;
+	memset(menu, 0, sizeof(menuframework_s));
+	menu->x = (int)(viddef.width * 0.50f);
+	menu->nitems = 0;
+	menu->cursordraw = MenuKeys_drawCursor;
+	menu->itemPerPageNb = KEYS_PER_PAGE;
+
+	for (int i = 0; i < NUM_BINDNAMES; i++)
+	{
+        menuaction_s *action = &MenuKeys_actions[i];
+        action->generic.type = bindnames[i][0] != NULL && bindnames[i][1] != NULL ? MTYPE_ACTION : MTYPE_SEPARATOR;
+        action->generic.flags = QMF_GRAYED;
+        action->generic.x = 0;
+        action->generic.y = ((i % KEYS_PER_PAGE) * 9);
+        action->generic.ownerdraw = MenuKeys_drawKeyBinding;
+        action->generic.localdata[0] = i;
+        action->generic.name = bindnames[i][1];
+        Menu_AddItem(menu, (void *)action);
+	}
+
+    MenuKeys_resetStatusBar(menu);
+	Menu_Center(menu);
+}
+
 void MenuKeys_enter()
 {
-	Keys_MenuInit();
-	M_PushMenu(Keys_MenuDraw, Keys_MenuKey);
+	MenuKeys_init();
+	M_PushMenu(MenuKeys_draw, MenuKeys_key);
 }

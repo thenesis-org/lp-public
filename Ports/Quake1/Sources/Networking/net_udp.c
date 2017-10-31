@@ -175,7 +175,7 @@ static int PartialIPAddress(char *in, struct qsockaddr *hostaddr)
 
 	buff[0] = '.';
 	b = buff;
-	strcpy(buff + 1, in);
+	Q_strncpy(buff + 1, in, 256);
 	if (buff[1] == '.')
 		b++;
 

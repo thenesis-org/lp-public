@@ -4,33 +4,31 @@
 
 #include <SDL2/SDL.h>
 
-#include <unistd.h>
-#include <signal.h>
-#include <stdlib.h>
+#include <ctype.h>
+#include <errno.h>
 #include <limits.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <fcntl.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
-#include <ctype.h>
-#include <errno.h>
+
+#include <fcntl.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/time.h>
+#include <sys/types.h>
 #ifndef __WIN32__
 #include <sys/ipc.h>
+#include <sys/mman.h>
 #include <sys/shm.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
-#include <sys/mman.h>
 #endif
 
-bool logFileEnabled = true;
+bool logFileEnabled = false;
 
 char *basedir = ".";
 char *cachedir = "/tmp";
-
-cvar_t sys_linerefresh = { "sys_linerefresh", "0" }; // set for entity display
 
 // =======================================================================
 // General routines
@@ -76,9 +74,6 @@ void Sys_Warn(char *warning, ...)
 
 void Sys_RedirectStdout()
 {
-	char path_stdout[MAX_OSPATH];
-	char path_stderr[MAX_OSPATH];
-
 	if (!logFileEnabled)
 		return;
 
@@ -89,9 +84,12 @@ void Sys_RedirectStdout()
 	if (COM_CreatePath(home))
 		return;
 
-	snprintf(path_stdout, sizeof(path_stdout), "%s/%s", home, "stdout.txt");
-	snprintf(path_stderr, sizeof(path_stderr), "%s/%s", home, "stderr.txt");
-
+	char path_stdout[MAX_OSPATH+1];
+	char path_stderr[MAX_OSPATH+1];
+	snprintf(path_stdout, MAX_OSPATH, "%s/%s", home, "stdout.txt");
+	snprintf(path_stderr, MAX_OSPATH, "%s/%s", home, "stderr.txt");
+    path_stdout[MAX_OSPATH] = 0;
+    path_stderr[MAX_OSPATH] = 0;
 	(void)freopen(path_stdout, "w", stdout);
 	(void)freopen(path_stderr, "w", stderr);
 }
@@ -105,7 +103,8 @@ void Sys_RedirectStdout()
  */
 
 #define MAX_HANDLES 10
-FILE *sys_handles[MAX_HANDLES];
+static FILE *sys_handles[MAX_HANDLES];
+//static char sys_path[MAX_HANDLES][MAX_OSPATH];
 
 int findhandle()
 {
@@ -133,6 +132,11 @@ static int Qfilelength(FILE *f)
 int Sys_FileOpenRead(char *path, int *hndl)
 {
 	int i = findhandle();
+    if (i < 0)
+    {
+		*hndl = -1;
+        return -1;
+    }
 	FILE *f = fopen(path, "rb");
 	if (!f)
 	{
@@ -140,6 +144,8 @@ int Sys_FileOpenRead(char *path, int *hndl)
 		return -1;
 	}
 	sys_handles[i] = f;
+    //Q_strncpy(sys_path[i], path, MAX_OSPATH);
+    //printf("Opening %s\n", path);
 	*hndl = i;
 	return Qfilelength(f);
 }
@@ -147,68 +153,87 @@ int Sys_FileOpenRead(char *path, int *hndl)
 int Sys_FileOpenWrite(char *path)
 {
 	int i = findhandle();
+    if (i < 0)
+        return -1;
 	FILE *f = fopen(path, "wb");
 	if (!f)
+    {
 		Sys_Error("Error opening %s: %s", path, strerror(errno));
+        return -1;
+    }
 	sys_handles[i] = f;
+    //Q_strncpy(sys_path[i], path, MAX_OSPATH);
 	return i;
 }
 
 void Sys_FileClose(int handle)
 {
-	if (handle >= 0)
+	if (handle >= 0 && handle < MAX_HANDLES)
 	{
-		fclose(sys_handles[handle]);
-		sys_handles[handle] = NULL;
+        FILE *sysHandle = sys_handles[handle];
+        if (sysHandle)
+        {
+            fclose(sysHandle);
+            sys_handles[handle] = NULL;
+            // printf("Closing %s\n", sys_path[handle]);
+        }
 	}
 }
 
 void Sys_FileSeek(int handle, int position)
 {
-	if (handle >= 0)
-		fseek(sys_handles[handle], position, SEEK_SET);
+	if (handle >= 0 && handle < MAX_HANDLES)
+    {
+        FILE *sysHandle = sys_handles[handle];
+        if (sysHandle)
+        {
+            fseek(sys_handles[handle], position, SEEK_SET);
+        }
+    }
 }
 
 int Sys_FileRead(int handle, void *dst, int count)
 {
-	char *data;
-	int size, done;
-
-	size = 0;
-	if (handle >= 0)
+	int size = 0;
+	if (handle >= 0 && handle < MAX_HANDLES)
 	{
-		data = dst;
-		while (count > 0)
-		{
-			done = fread(data, 1, count, sys_handles[handle]);
-			if (done == 0)
-				break;
-			data += done;
-			count -= done;
-			size += done;
-		}
+        FILE *sysHandle = sys_handles[handle];
+        if (sysHandle)
+        {
+            char *data = dst;
+            while (count > 0)
+            {
+                int done = fread(data, 1, count, sysHandle);
+                if (done == 0)
+                    break;
+                data += done;
+                count -= done;
+                size += done;
+            }
+        }
 	}
 	return size;
 }
 
 int Sys_FileWrite(int handle, void *src, int count)
 {
-	char *data;
-	int size, done;
-
-	size = 0;
-	if (handle >= 0)
+	int size = 0;
+	if (handle >= 0 && handle < MAX_HANDLES)
 	{
-		data = src;
-		while (count > 0)
-		{
-			done = fread(data, 1, count, sys_handles[handle]);
-			if (done == 0)
-				break;
-			data += done;
-			count -= done;
-			size += done;
-		}
+        FILE *sysHandle = sys_handles[handle];
+        if (sysHandle)
+        {
+            char *data = src;
+            while (count > 0)
+            {
+                int done = fwrite(data, 1, count, sysHandle);
+                if (done == 0)
+                    break;
+                data += done;
+                count -= done;
+                size += done;
+            }
+        }
 	}
 	return size;
 }
@@ -315,13 +340,12 @@ void Sys_Sleep()
 
 int main(int c, char **v)
 {
-	double time, oldtime, newtime;
 	quakeparms_t parms;
 	extern int vcrFile;
 	extern int recording;
 
     #if 0
-	parms.memsize = 8 * 1024 * 1024; 
+	parms.memsize = 8 * 1024 * 1024; // Original game memory. It does not work with the mission packs.
     #else
 	parms.memsize = 16 * 1024 * 1024; // Because of the numerous changes in the game engine, we probably need more memory than the original game.
     #endif
@@ -336,12 +360,12 @@ int main(int c, char **v)
 
 	Host_Init(&parms);
 
-	oldtime = Sys_FloatTime() - 0.1f;
+	double oldtime = Sys_FloatTime() - 0.1f;
 	while (1)
 	{
 		// find time spent rendering last frame
-		newtime = Sys_FloatTime();
-		time = newtime - oldtime;
+		double newtime = Sys_FloatTime();
+		double time = newtime - oldtime;
 
 		if (cls.state == ca_dedicated) // play vcrfiles at max speed
 		{

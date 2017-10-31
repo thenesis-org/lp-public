@@ -1212,7 +1212,7 @@ void CL_ParseTEnt(void)
 	}
 }
 
-void CL_AddBeams(void)
+void CL_AddBeams()
 {
 	int i, j;
 	beam_t *b;
@@ -1355,7 +1355,7 @@ void CL_AddBeams(void)
 
 extern cvar_t *hand;
 
-void CL_AddPlayerBeams(void)
+void CL_AddPlayerBeams()
 {
 	int i, j;
 	beam_t *b;
@@ -1638,7 +1638,7 @@ void CL_AddPlayerBeams(void)
 	}
 }
 
-void CL_AddExplosions(void)
+void CL_AddExplosions()
 {
 	entity_t *ent;
 	int i;
@@ -1741,9 +1741,7 @@ void CL_AddExplosions(void)
 		}
 
 		if (ex->type == ex_free)
-		{
 			continue;
-		}
 
 		if (ex->light)
 		{
@@ -1766,7 +1764,7 @@ void CL_AddExplosions(void)
 	}
 }
 
-void CL_AddLasers(void)
+void CL_AddLasers()
 {
 	laser_t *l;
 	int i;
@@ -1802,7 +1800,7 @@ void CL_ProcessSustain()
 	}
 }
 
-void CL_AddTEnts(void)
+void CL_AddTEnts()
 {
 	CL_AddBeams();
 	CL_AddPlayerBeams();

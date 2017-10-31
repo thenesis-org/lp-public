@@ -657,7 +657,7 @@ void V_CalcIntermissionRefdef()
 	VectorCopy(ent->angles, r_refdef.viewangles);
 	view->model = NULL;
 
-	// allways idle in intermission
+	// always idle in intermission
 	old = v_idlescale.value;
 	v_idlescale.value = 1;
 	V_AddIdle();
@@ -814,28 +814,23 @@ void V_RenderView()
 			V_CalcRefdef();
 	}
 
-	R_PushDlights();
+	R_setupFrame();
 
 	if (lcd_x.value)
 	{
-		//
 		// render two interleaved views
-		//
-		int i;
 
 		vid.aspect *= 0.5f;
 
 		r_refdef.viewangles[YAW] -= lcd_yaw.value;
-		for (i = 0; i < 3; i++)
+		for (int i = 0; i < 3; i++)
 			r_refdef.vieworg[i] -= right[i] * lcd_x.value;
-		R_RenderView();
-
-		R_PushDlights();
+		R_renderView();
 
 		r_refdef.viewangles[YAW] += lcd_yaw.value * 2;
-		for (i = 0; i < 3; i++)
+		for (int i = 0; i < 3; i++)
 			r_refdef.vieworg[i] += 2 * right[i] * lcd_x.value;
-		R_RenderView();
+		R_renderView();
 
 		r_refdef.vrect.height <<= 1;
 
@@ -843,7 +838,7 @@ void V_RenderView()
 	}
 	else
 	{
-		R_RenderView();
+		R_renderView();
 	}
 }
 

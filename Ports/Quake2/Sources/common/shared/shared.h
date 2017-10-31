@@ -129,6 +129,7 @@ typedef enum
 
 typedef float vec_t;
 typedef vec_t vec3_t[3];
+typedef vec_t vec4_t[4];
 typedef vec_t vec5_t[5];
 
 typedef int fixed4_t;
@@ -171,6 +172,7 @@ void ClearBounds(vec3_t mins, vec3_t maxs);
 void AddPointToBounds(vec3_t v, vec3_t mins, vec3_t maxs);
 int VectorCompare(vec3_t v1, vec3_t v2);
 vec_t VectorLength(vec3_t v);
+vec_t VectorDistance(vec3_t v0, vec3_t v1);
 void CrossProduct(vec3_t v1, vec3_t v2, vec3_t cross);
 vec_t VectorNormalize(vec3_t v); /* returns vector length */
 vec_t VectorNormalize2(vec3_t v, vec3_t out);

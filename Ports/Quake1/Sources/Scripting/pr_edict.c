@@ -982,11 +982,6 @@ void ED_LoadFromFile(char *data)
 	Con_DPrintf("%i entities inhibited\n", inhibit);
 }
 
-/*
-   ===============
-   PR_LoadProgs
-   ===============
- */
 void PR_LoadProgs()
 {
 	int i;
@@ -1064,11 +1059,6 @@ void PR_LoadProgs()
 		((int *)pr_globals)[i] = LittleLong(((int *)pr_globals)[i]);
 }
 
-/*
-   ===============
-   PR_Init
-   ===============
- */
 void PR_Init()
 {
 	Cmd_AddCommand("edict", ED_PrintEdict_f);

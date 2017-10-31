@@ -121,9 +121,12 @@ static inline bool VectorCompare(const vec3_t v1, const vec3_t v2)
 
 static inline void VectorMA(const vec3_t veca, float scale, const vec3_t vecb, vec3_t vecc)
 {
-	vecc[0] = veca[0] + scale * vecb[0];
-	vecc[1] = veca[1] + scale * vecb[1];
-	vecc[2] = veca[2] + scale * vecb[2];
+    float x = veca[0] + scale * vecb[0];
+    float y = veca[1] + scale * vecb[1];
+    float z = veca[2] + scale * vecb[2];
+	vecc[0] = x;
+	vecc[1] = y;
+	vecc[2] = z;
 }
 
 static inline vec_t VectorDistance(const vec3_t a, const vec3_t b)
@@ -155,6 +158,8 @@ typedef struct mplane_s
 	byte signbits; // signx + signy<<1 + signz<<1
 	byte pad[2];
 } mplane_t;
+
+void RotatePointAroundVector(vec3_t dst, const vec3_t dir, const vec3_t point, float degrees);
 
 int BoxOnPlaneSide(vec3_t emins, vec3_t emaxs, struct mplane_s *plane);
 

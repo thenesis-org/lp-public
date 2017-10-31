@@ -24,8 +24,8 @@
 #include "Common/cvar.h"
 #include "Common/common.h"
 #include "Common/mathlib.h"
-#include "Rendering/render.h"
-#include "Rendering/vid.h"
+#include "Rendering/r_public.h"
+#include "Rendering/r_video.h"
 
 typedef struct
 {

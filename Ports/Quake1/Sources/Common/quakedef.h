@@ -1,23 +1,3 @@
-/*
-   Copyright (C) 1996-1997 Id Software, Inc.
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-   See the GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-
- */
-// primary header for client
 #ifndef quakedef_h
 #define quakedef_h
 
@@ -27,10 +7,11 @@
 
 #define QUAKE_GAME // as opposed to utilities
 
-#define VERSION 1.09
-#define GLQUAKE_VERSION 1.00 // TODO: Use team name and version.
+#define QUAKE_HOST_VERSION 1.09
 
-//define	PARANOID			// speed sapping error checking
+#if defined(QUAKE_DEBUG)
+#define PARANOID // speed sapping error checking
+#endif
 
 #define GAMENAME "id1"
 

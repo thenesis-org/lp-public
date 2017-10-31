@@ -291,14 +291,15 @@ void Sys_Error(char *error, ...)
 	#endif
 
 	va_start(argptr, error);
-	vsprintf(text, error, argptr);
+	vsnprintf(text, 1024, error, argptr);
 	va_end(argptr);
+    text[1023] = 0;
 
 	#ifndef DEDICATED_ONLY
-	fprintf(stderr, "Error: %s\n", text);
+	fprintf(stderr, "Fatal error: %s\n", text);
 	#endif
 
-	MessageBox(NULL, text, "Error", 0 /* MB_OK */);
+	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Fatal error", text, NULL);
 
 	/* Close stdout and stderr */
 	#ifndef DEDICATED_ONLY

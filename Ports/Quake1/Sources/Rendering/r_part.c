@@ -20,49 +20,58 @@
 
 #include "Client/client.h"
 #include "Client/console.h"
+#include "Common/cmd.h"
 #include "Common/mathlib.h"
-#include "Rendering/glquake.h"
+#include "Rendering/r_private.h"
 #include "Server/server.h"
 
 #include <stdlib.h>
 
+cvar_t r_particles_min_size = { "r_particles_min_size", "2", true, false };
+cvar_t r_particles_max_size = { "r_particles_max_size", "40", true, false };
+cvar_t r_particles_size = { "r_particles_size", "40", true, false };
+cvar_t r_particles_att_a = { "r_particles_att_a", "0.01", true, false };
+cvar_t r_particles_att_b = { "r_particles_att_b", "0.0", true, false };
+cvar_t r_particles_att_c = { "r_particles_att_c", "0.01", true, false };
+
+typedef enum
+{
+	pt_static, pt_grav, pt_slowgrav, pt_fire, pt_explode, pt_explode2, pt_blob, pt_blob2
+} ptype_t;
+
+typedef struct particle_s
+{
+	// driver-usable fields
+	vec3_t org;
+	float color;
+	// drivers never touch the following fields
+	struct particle_s *next;
+	vec3_t vel;
+	float ramp;
+	float die;
+	ptype_t type;
+} particle_t;
+
 #define MAX_PARTICLES 2048 // default max # of particles at one time
 #define ABSOLUTE_MIN_PARTICLES 512 // no fewer than this no matter what's on the command line
-
-static const unsigned char ramp1[8] = { 0x6f, 0x6d, 0x6b, 0x69, 0x67, 0x65, 0x63, 0x61 };
-static const unsigned char ramp2[8] = { 0x6f, 0x6e, 0x6d, 0x6c, 0x6b, 0x6a, 0x68, 0x66 };
-static const unsigned char ramp3[8] = { 0x6d, 0x6b, 6, 5, 4, 3 };
 
 static particle_t *active_particles, *free_particles;
 static particle_t *particles;
 static int r_numparticles;
 
-void R_InitParticles()
-{
-	int i = COM_CheckParm("-particles");
-	if (i)
-	{
-		r_numparticles = (int)(Q_atoi(com_argv[i + 1]));
-		if (r_numparticles < ABSOLUTE_MIN_PARTICLES)
-			r_numparticles = ABSOLUTE_MIN_PARTICLES;
-	}
-	else
-	{
-		r_numparticles = MAX_PARTICLES;
-	}
-	particles = (particle_t *)
-	        Hunk_AllocName(r_numparticles * sizeof(particle_t), "particles");
-}
-
 #define NUMVERTEXNORMALS 162
 
-float r_avertexnormals[NUMVERTEXNORMALS][3] =
+static const float r_avertexnormals[NUMVERTEXNORMALS][3] =
 {
 	#include "Rendering/anorms.h"
 };
 
 static vec3_t avelocities[NUMVERTEXNORMALS];
 static float beamlength = 16;
+
+static const unsigned char ramp1[8] = { 0x6f, 0x6d, 0x6b, 0x69, 0x67, 0x65, 0x63, 0x61 };
+static const unsigned char ramp2[8] = { 0x6f, 0x6e, 0x6d, 0x6c, 0x6b, 0x6a, 0x68, 0x66 };
+static const unsigned char ramp3[8] = { 0x6d, 0x6b, 6, 5, 4, 3 };
 
 void R_EntityParticles(entity_t *ent)
 {
@@ -116,67 +125,60 @@ void R_EntityParticles(entity_t *ent)
 	}
 }
 
-void R_ClearParticles()
+void R_RunParticleEffect(vec3_t org, vec3_t dir, int color, int count)
 {
-	free_particles = &particles[0];
-	active_particles = NULL;
-
-	for (int i = 0; i < r_numparticles; i++)
-		particles[i].next = &particles[i + 1];
-	particles[r_numparticles - 1].next = NULL;
-}
-
-void R_ReadPointFile_f()
-{
-	FILE *f;
-	vec3_t org;
-	int r;
-	int c;
+	int i, j;
 	particle_t *p;
-	char name[MAX_OSPATH];
 
-	sprintf(name, "maps/%s.pts", sv.name);
-
-	COM_FOpenFile(name, &f);
-	if (!f)
+	for (i = 0; i < count; i++)
 	{
-		Con_Printf("couldn't open %s\n", name);
-		return;
-	}
-
-	Con_Printf("Reading %s...\n", name);
-	c = 0;
-	for (;; )
-	{
-		r = fscanf(f, "%f %f %f\n", &org[0], &org[1], &org[2]);
-		if (r != 3)
-			break;
-		c++;
-
 		if (!free_particles)
-		{
-			Con_Printf("Not enough free particles\n");
-			break;
-		}
+			return;
+
 		p = free_particles;
 		free_particles = p->next;
 		p->next = active_particles;
 		active_particles = p;
 
-		p->die = 99999;
-		p->color = (-c) & 15;
-		p->type = pt_static;
-		VectorCopy(vec3_origin, p->vel);
-		VectorCopy(org, p->org);
+		if (count == 1024) // rocket explosion
+		{
+			p->die = cl.time + 5;
+			p->color = ramp1[0];
+			p->ramp = rand() & 3;
+			if (i & 1)
+			{
+				p->type = pt_explode;
+				for (j = 0; j < 3; j++)
+				{
+					p->org[j] = org[j] + ((rand() % 32) - 16);
+					p->vel[j] = (rand() % 512) - 256;
+				}
+			}
+			else
+			{
+				p->type = pt_explode2;
+				for (j = 0; j < 3; j++)
+				{
+					p->org[j] = org[j] + ((rand() % 32) - 16);
+					p->vel[j] = (rand() % 512) - 256;
+				}
+			}
+		}
+		else
+		{
+			p->die = cl.time + 0.1 * (rand() % 5);
+			p->color = (color & ~7) + (rand() & 7);
+			p->type = pt_slowgrav;
+			for (j = 0; j < 3; j++)
+			{
+				p->org[j] = org[j] + ((rand() & 15) - 8);
+				p->vel[j] = dir[j] * 15; // + (rand()%300)-150;
+			}
+		}
 	}
-
-	fclose(f);
-	Con_Printf("%i points read\n", c);
 }
 
-/*
-   Parse an effect out of the server message
- */
+// Parse an effect out of the server message
 void R_ParseParticleEffect()
 {
 	vec3_t org, dir;
@@ -300,59 +302,6 @@ void R_BlobExplosion(vec3_t org)
 			{
 				p->org[j] = org[j] + ((rand() % 32) - 16);
 				p->vel[j] = (rand() % 512) - 256;
-			}
-		}
-	}
-}
-
-void R_RunParticleEffect(vec3_t org, vec3_t dir, int color, int count)
-{
-	int i, j;
-	particle_t *p;
-
-	for (i = 0; i < count; i++)
-	{
-		if (!free_particles)
-			return;
-
-		p = free_particles;
-		free_particles = p->next;
-		p->next = active_particles;
-		active_particles = p;
-
-		if (count == 1024) // rocket explosion
-		{
-			p->die = cl.time + 5;
-			p->color = ramp1[0];
-			p->ramp = rand() & 3;
-			if (i & 1)
-			{
-				p->type = pt_explode;
-				for (j = 0; j < 3; j++)
-				{
-					p->org[j] = org[j] + ((rand() % 32) - 16);
-					p->vel[j] = (rand() % 512) - 256;
-				}
-			}
-			else
-			{
-				p->type = pt_explode2;
-				for (j = 0; j < 3; j++)
-				{
-					p->org[j] = org[j] + ((rand() % 32) - 16);
-					p->vel[j] = (rand() % 512) - 256;
-				}
-			}
-		}
-		else
-		{
-			p->die = cl.time + 0.1 * (rand() % 5);
-			p->color = (color & ~7) + (rand() & 7);
-			p->type = pt_slowgrav;
-			for (j = 0; j < 3; j++)
-			{
-				p->org[j] = org[j] + ((rand() & 15) - 8);
-				p->vel[j] = dir[j] * 15; // + (rand()%300)-150;
 			}
 		}
 	}
@@ -538,69 +487,14 @@ void R_RocketTrail(vec3_t start, vec3_t end, int type)
 	}
 }
 
-void R_InitParticleTexture()
+static float R_Particles_computeSize(float distance2, float distance)
 {
-	//
-	// particle texture
-	//
-	particletexture = texture_extension_number++;
-	GL_Bind(particletexture);
-
-	// Particle texture.
-	{
-		int particleSize = 16;
-		byte *particleData = malloc(particleSize * particleSize * 4);
-		float radius = (float)((particleSize >> 1) - 2), radius2 = radius * radius, center = (float)(particleSize >> 1);
-		for (int y = 0; y < particleSize; y++)
-		{
-			for (int x = 0; x < particleSize; x++)
-			{
-				float rx = (float)x - center, ry = (float)y - center;
-				float rd2 = rx * rx + ry * ry;
-				float a;
-				if (rd2 > radius2)
-				{
-					a = 1.0f - (sqrtf(rd2) - radius);
-					if (a < 0.0f)
-						a = 0.0f;
-					if (a > 1.0f)
-						a = 1.0f;
-				}
-				else
-					a = 1.0f;
-				byte *d = &particleData[(x + y * particleSize) * 4];
-				d[0] = 255;
-				d[1] = 255;
-				d[2] = 255;
-				d[3] = (byte)(a * 255.0f);
-			}
-		}
-
-		#if defined(EGLW_GLES1)
-		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
-		#endif
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, particleSize, particleSize, 0, GL_RGBA, GL_UNSIGNED_BYTE, particleData);
-		#if defined(EGLW_GLES1)
-		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_FALSE);
-		#else
-		glGenerateMipmap(GL_TEXTURE_2D);
-		#endif
-
-		free(particleData);
-	}
-
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-}
-
-static float computeParticleSize(float distance2, float distance)
-{
-	float attenuation = gl_particle_att_a.value;
-	float factorB = gl_particle_att_b.value;
-	float factorC = gl_particle_att_c.value;
-	float particleSize = gl_particle_size.value;
-	float particleMinSize = gl_particle_min_size.value;
-	float particleMaxSize = gl_particle_max_size.value;
+	float attenuation = r_particles_att_a.value;
+	float factorB = r_particles_att_b.value;
+	float factorC = r_particles_att_c.value;
+	float particleSize = r_particles_size.value;
+	float particleMinSize = r_particles_min_size.value;
+	float particleMaxSize = r_particles_max_size.value;
 
 	if (factorB > 0.0f || factorC > 0.0f)
 	{
@@ -718,7 +612,127 @@ static void R_UpdateParticles()
 	}
 }
 
-void R_DrawParticles()
+static int r_particleTexture; // little dot for particles
+
+static void R_InitParticleTexture()
+{
+	// Particle texture.
+    int particleSize = 16;
+    byte *particleData = malloc(particleSize * particleSize * 4);
+    float radius = (float)((particleSize >> 1) - 2), radius2 = radius * radius, center = (float)(particleSize >> 1);
+    for (int y = 0; y < particleSize; y++)
+    {
+        for (int x = 0; x < particleSize; x++)
+        {
+            float rx = (float)x - center, ry = (float)y - center;
+            float rd2 = rx * rx + ry * ry;
+            float a;
+            if (rd2 > radius2)
+            {
+                a = 1.0f - (sqrtf(rd2) - radius);
+                if (a < 0.0f)
+                    a = 0.0f;
+                if (a > 1.0f)
+                    a = 1.0f;
+            }
+            else
+                a = 1.0f;
+            byte *d = &particleData[(x + y * particleSize) * 4];
+            d[0] = 255;
+            d[1] = 255;
+            d[2] = 255;
+            d[3] = (byte)(a * 255.0f);
+        }
+    }
+
+    r_particleTexture = R_Texture_create("", particleSize, particleSize, particleData, true, true, false, false);
+
+    free(particleData);
+}
+
+static void R_ReadPointFile_f()
+{  
+	char name[MAX_OSPATH + 1];
+	snprintf(name, MAX_OSPATH, "maps/%s.pts", sv.name);
+    name[MAX_OSPATH] = 0;
+
+	FILE *f;
+	COM_FOpenFile(name, &f);
+	if (!f)
+	{
+		Con_Printf("couldn't open %s\n", name);
+		return;
+	}
+
+	Con_Printf("Reading %s...\n", name);
+	int c = 0;
+	for (;; )
+	{
+        vec3_t org;
+		int r = fscanf(f, "%f %f %f\n", &org[0], &org[1], &org[2]);
+		if (r != 3)
+			break;
+		c++;
+
+		if (!free_particles)
+		{
+			Con_Printf("Not enough free particles\n");
+			break;
+		}
+        particle_t *p = free_particles;
+		free_particles = p->next;
+		p->next = active_particles;
+		active_particles = p;
+
+		p->die = 99999;
+		p->color = (-c) & 15;
+		p->type = pt_static;
+		VectorCopy(vec3_origin, p->vel);
+		VectorCopy(org, p->org);
+	}
+
+	fclose(f);
+	Con_Printf("%i points read\n", c);
+}
+
+void R_Particles_initialize()
+{
+	Cvar_RegisterVariable(&r_particles_min_size);
+	Cvar_RegisterVariable(&r_particles_max_size);
+	Cvar_RegisterVariable(&r_particles_size);
+	Cvar_RegisterVariable(&r_particles_att_a);
+	Cvar_RegisterVariable(&r_particles_att_b);
+	Cvar_RegisterVariable(&r_particles_att_c);
+
+	Cmd_AddCommand("pointfile", R_ReadPointFile_f);
+
+	int i = COM_CheckParm("-particles");
+	if (i)
+	{
+		r_numparticles = (int)(Q_atoi(com_argv[i + 1]));
+		if (r_numparticles < ABSOLUTE_MIN_PARTICLES)
+			r_numparticles = ABSOLUTE_MIN_PARTICLES;
+	}
+	else
+	{
+		r_numparticles = MAX_PARTICLES;
+	}
+	particles = (particle_t *)Hunk_AllocName(r_numparticles * sizeof(particle_t), "particles");
+
+	R_InitParticleTexture();
+}
+
+void R_Particles_clear()
+{
+	free_particles = &particles[0];
+	active_particles = NULL;
+
+	for (int i = 0; i < r_numparticles; i++)
+		particles[i].next = &particles[i + 1];
+	particles[r_numparticles - 1].next = NULL;
+}
+
+void R_Particles_draw()
 {
 	int particleNb = 0;
 	for (particle_t *p = active_particles; p; p = p->next)
@@ -731,10 +745,10 @@ void R_DrawParticles()
 	pixelWidthAtDepth1 *= 16.0f / 14.0f;
 
 	vec3_t up, right;
-	VectorScale(vup, 1.0f, up);
-	VectorScale(vright, 1.0f, right);
+	VectorScale(r_viewUp, 1.0f, up);
+	VectorScale(r_viewRight, 1.0f, right);
 
-	GL_Bind(particletexture);
+	oglwBindTexture(0, r_particleTexture);
     oglwEnableBlending(true);
 	oglwEnableDepthWrite(false);
 	oglwSetTextureBlending(0, GL_MODULATE);
@@ -745,12 +759,12 @@ void R_DrawParticles()
     {
         for (particle_t *p = active_particles; p; p = p->next)
         {
-            float dx = p->org[0] - r_origin[0], dy = p->org[1] - r_origin[1], dz = p->org[2] - r_origin[2];
+            float dx = p->org[0] - r_viewOrigin[0], dy = p->org[1] - r_viewOrigin[1], dz = p->org[2] - r_viewOrigin[2];
             float distance2 = dx * dx + dy * dy + dz * dz;
             float distance = sqrtf(distance2);
 
             // Size in pixels, like OpenGLES.
-            float size = computeParticleSize(distance2, distance);
+            float size = R_Particles_computeSize(distance2, distance);
 
             // Size in world space.
             size = size * pixelWidthAtDepth1 * distance;

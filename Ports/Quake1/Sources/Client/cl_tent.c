@@ -25,8 +25,8 @@
 #include "Common/quakedef.h"
 #include "Common/sys.h"
 #include "Networking/protocol.h"
-#include "Rendering/render.h"
-#include "Rendering/gl_model.h"
+#include "Rendering/r_public.h"
+#include "Rendering/r_model.h"
 #include "Sound/sound.h"
 
 #include <stdlib.h>

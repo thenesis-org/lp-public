@@ -24,14 +24,11 @@
  * =======================================================================
  */
 
-#include "local.h"
+#include "client/refresh/r_private.h"
 
 #include <stdbool.h>
 
 image_t *draw_chars;
-
-extern qboolean scrap_dirty;
-void Scrap_Upload();
 
 extern unsigned r_rawpalette[256];
 
@@ -102,7 +99,8 @@ void Draw_CharScaled(int x, int y, int num, float scale)
 	}
 
 	OglwVertex *v = oglwAllocateVertex(4);
-	AddQuad2D_T1(v, x, y, x + scaledSize, y + scaledSize, fcol, frow, fcol + size, frow + size);
+    if (v)
+        AddQuad2D_T1(v, x, y, x + scaledSize, y + scaledSize, fcol, frow, fcol + size, frow + size);
 
 	if (begin)
 		Draw_CharEnd();
@@ -144,7 +142,7 @@ void Draw_StretchPic(int x, int y, int w, int h, char *pic)
 	image_t *gl = Draw_FindPic(pic);
 	if (!gl)
 	{
-		VID_Printf(PRINT_ALL, "Can't find pic: %s\n", pic);
+		R_printf(PRINT_ALL, "Can't find pic: %s\n", pic);
 		return;
 	}
 
@@ -154,7 +152,8 @@ void Draw_StretchPic(int x, int y, int w, int h, char *pic)
 	oglwBindTexture(0, gl->texnum);
 	oglwBegin(GL_QUADS);
 	OglwVertex *v = oglwAllocateVertex(4);
-	AddQuad2D_T1(v, x, y, x + w, y + h, gl->sl, gl->tl, gl->sh, gl->th);
+    if (v)
+        AddQuad2D_T1(v, x, y, x + w, y + h, gl->sl, gl->tl, gl->sh, gl->th);
 	oglwEnd();
 }
 
@@ -168,7 +167,7 @@ void Draw_PicScaled(int x, int y, char *pic, float factor)
 	image_t *gl = Draw_FindPic(pic);
 	if (!gl)
 	{
-		VID_Printf(PRINT_ALL, "Can't find pic: %s\n", pic);
+		R_printf(PRINT_ALL, "Can't find pic: %s\n", pic);
 		return;
 	}
 
@@ -181,7 +180,8 @@ void Draw_PicScaled(int x, int y, char *pic, float factor)
 	oglwBindTexture(0, gl->texnum);
 	oglwBegin(GL_QUADS);
 	OglwVertex *v = oglwAllocateVertex(4);
-	AddQuad2D_T1(v, x, y, x + w, y + h, gl->sl, gl->tl, gl->sh, gl->th);
+    if (v)
+        AddQuad2D_T1(v, x, y, x + w, y + h, gl->sl, gl->tl, gl->sh, gl->th);
 	oglwEnd();
 }
 
@@ -195,15 +195,18 @@ void Draw_TileClear(int x, int y, int w, int h, char *pic)
 	image_t *image = Draw_FindPic(pic);
 	if (!image)
 	{
-		VID_Printf(PRINT_ALL, "Can't find pic: %s\n", pic);
+		R_printf(PRINT_ALL, "Can't find pic: %s\n", pic);
 		return;
 	}
 
 	oglwBindTexture(0, image->texnum);
 	oglwBegin(GL_QUADS);
 	OglwVertex *v = oglwAllocateVertex(4);
-	float s = 1.0f / 64.0f;
-	AddQuad2D_T1(v, x, y, x + w, y + h, x * s, y * s, (x + w) * s, (y + h) * s);
+    if (v)
+    {
+        float s = 1.0f / 64.0f;
+        AddQuad2D_T1(v, x, y, x + w, y + h, x * s, y * s, (x + w) * s, (y + h) * s);
+    }
 	oglwEnd();
 }
 
@@ -213,13 +216,16 @@ void Draw_TileClear(int x, int y, int w, int h, char *pic)
 void Draw_Fill(int x, int y, int w, int h, int c)
 {
 	if ((unsigned)c > 255)
-		VID_Error(ERR_FATAL, "Draw_Fill: bad color");
+		R_error(ERR_FATAL, "Draw_Fill: bad color");
 
 	oglwEnableTexturing(0, GL_FALSE);
 	oglwBegin(GL_QUADS);
 	OglwVertex *v = oglwAllocateVertex(4);
-	unsigned char *pc = d_8to24table[c];
-	AddQuad2D_C(v, x, y, x + w, y + h, pc[0] * (1.0f / 255.0f), pc[1] * (1.0f / 255.0f), pc[2] * (1.0f / 255.0f), 1.0f);
+    if (v)
+    {
+        unsigned char *pc = d_8to24table[c];
+        AddQuad2D_C(v, x, y, x + w, y + h, pc[0] * (1.0f / 255.0f), pc[1] * (1.0f / 255.0f), pc[2] * (1.0f / 255.0f), 1.0f);
+    }
 	oglwEnd();
 	oglwEnableTexturing(0, GL_TRUE);
 }
@@ -230,7 +236,8 @@ void Draw_FadeScreen()
 
 	oglwBegin(GL_QUADS);
 	OglwVertex *v = oglwAllocateVertex(4);
-	AddQuad2D_C(v, 0, 0, vid.width, vid.height, 0.0f, 0.0f, 0.0f, 0.8f);
+    if (v)
+        AddQuad2D_C(v, 0, 0, viddef.width, viddef.height, 0.0f, 0.0f, 0.0f, 0.8f);
 	oglwEnd();
 
 	oglwEnableTexturing(0, GL_TRUE);
@@ -292,7 +299,8 @@ void Draw_StretchRaw(int x, int y, int w, int h, int cols, int rows, byte *data)
 
 	oglwBegin(GL_QUADS);
 	OglwVertex *v = oglwAllocateVertex(4);
-	AddQuad2D_T1(v, x, y, x + w, y + h, 1.0f / 512.0f, 1.0f / 512.0f, 511.0f / 512.0f, t);
+    if (v)
+        AddQuad2D_T1(v, x, y, x + w, y + h, 1.0f / 512.0f, 1.0f / 512.0f, 511.0f / 512.0f, t);
 	oglwEnd();
 }
 
@@ -305,7 +313,7 @@ int Draw_GetPalette()
 	LoadPCX("pics/colormap.pcx", &pic, &pal, &width, &height);
 
 	if (!pal)
-		VID_Error(ERR_FATAL, "Couldn't load pics/colormap.pcx");
+		R_error(ERR_FATAL, "Couldn't load pics/colormap.pcx");
 
 	for (int i = 0; i < 255; i++)
 	{

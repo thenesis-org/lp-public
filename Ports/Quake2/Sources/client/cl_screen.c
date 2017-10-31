@@ -70,13 +70,13 @@ int crosshair_width, crosshair_height;
 extern cvar_t *cl_drawfps;
 extern cvar_t *crosshair_scale;
 
-void SCR_TimeRefresh_f(void);
-void SCR_Loading_f(void);
+void SCR_TimeRefresh_f();
+void SCR_Loading_f();
 
 /*
  * A new packet was just parsed
  */
-void CL_AddNetgraph(void)
+void CL_AddNetgraph()
 {
 	int i;
 	int in;
@@ -85,19 +85,13 @@ void CL_AddNetgraph(void)
 	/* if using the debuggraph for something
 	   else, don't add the net lines */
 	if (scr_debuggraph->value || scr_timegraph->value)
-	{
 		return;
-	}
 
 	for (i = 0; i < cls.netchan.dropped; i++)
-	{
 		SCR_DebugGraph(30, 0x40);
-	}
 
 	for (i = 0; i < cl.surpressCount; i++)
-	{
 		SCR_DebugGraph(30, 0xdf);
-	}
 
 	/* see what the latency was on this packet */
 	in = cls.netchan.incoming_acknowledged & (CMD_BACKUP - 1);
@@ -105,9 +99,7 @@ void CL_AddNetgraph(void)
 	ping /= 30;
 
 	if (ping > 30)
-	{
 		ping = 30;
-	}
 
 	SCR_DebugGraph((float)ping, 0xd0);
 }
@@ -128,7 +120,7 @@ void SCR_DebugGraph(float value, int color)
 	current++;
 }
 
-void SCR_DrawDebugGraph(void)
+void SCR_DrawDebugGraph()
 {
 	int a, x, y, w, i, h;
 	float v;
@@ -187,10 +179,7 @@ void SCR_CenterPrint(char *str)
 	while (*s)
 	{
 		if (*s == '\n')
-		{
 			scr_center_lines++;
-		}
-
 		s++;
 	}
 
@@ -205,20 +194,14 @@ void SCR_CenterPrint(char *str)
 		for (l = 0; l < 40; l++)
 		{
 			if ((s[l] == '\n') || !s[l])
-			{
 				break;
-			}
 		}
 
 		for (i = 0; i < (40 - l) / 2; i++)
-		{
 			line[i] = ' ';
-		}
 
 		for (j = 0; j < l; j++)
-		{
 			line[i++] = s[j];
-		}
 
 		line[i] = '\n';
 		line[i + 1] = 0;
@@ -226,15 +209,9 @@ void SCR_CenterPrint(char *str)
 		Com_Printf("%s", line);
 
 		while (*s && *s != '\n')
-		{
 			s++;
-		}
-
 		if (!*s)
-		{
 			break;
-		}
-
 		s++; /* skip the \n */
 	}
 	while (1);
@@ -391,7 +368,7 @@ void SCR_Sky_f()
 		axis[2] = 1;
 	}
 
-	R_SetSky(Cmd_Argv(1), rotate, axis);
+	R_Sky_set(Cmd_Argv(1), rotate, axis);
 }
 
 void SCR_Init()
@@ -526,34 +503,22 @@ void SCR_BeginLoadingPlaque()
 	#endif
 
 	if (cls.disable_screen)
-	{
 		return;
-	}
 
 	if (developer->value)
-	{
 		return;
-	}
 
+	/* if at console, don't bring up the plaque */
 	if (cls.state == ca_disconnected)
-	{
-		/* if at console, don't bring up the plaque */
 		return;
-	}
 
 	if (cls.key_dest == key_console)
-	{
 		return;
-	}
 
 	if (cl.cinematictime > 0)
-	{
 		scr_draw_loading = 2; /* clear to balack first */
-	}
 	else
-	{
 		scr_draw_loading = 1;
-	}
 
 	SCR_UpdateScreen();
 
@@ -564,7 +529,7 @@ void SCR_BeginLoadingPlaque()
 	cls.disable_servercount = cl.servercount;
 }
 
-void SCR_EndLoadingPlaque(void)
+void SCR_EndLoadingPlaque()
 {
 	cls.disable_screen = 0;
 	Con_ClearNotify();
@@ -593,15 +558,15 @@ void SCR_TimeRefresh_f()
 
 		for (j = 0; j < 1000; j++)
 		{
-			R_BeginFrame(0, 0);
+			R_Frame_begin(0, 0);
 
 			for (i = 0; i < 128; i++)
 			{
 				cl.refdef.viewangles[1] = i / 128.0f * 360.0f;
-				R_RenderFrame(&cl.refdef);
+				R_View_draw(&cl.refdef);
 			}
 
-			Renderer_EndFrame();
+			R_Frame_end();
 		}
 	}
 	else
@@ -610,9 +575,9 @@ void SCR_TimeRefresh_f()
 		{
 			cl.refdef.viewangles[1] = i / 128.0f * 360.0f;
 
-			R_BeginFrame(0, 0);
-			R_RenderFrame(&cl.refdef);
-			Renderer_EndFrame();
+			R_Frame_begin(0, 0);
+			R_View_draw(&cl.refdef);
+			R_Frame_end();
 		}
 	}
 
@@ -867,7 +832,7 @@ void SCR_DrawField(int x, int y, int color, int width, int value)
 /*
  * Allows rendering code to cache all needed sbar graphics
  */
-void SCR_TouchPics(void)
+void SCR_TouchPics()
 {
 	int i, j;
 
@@ -1239,13 +1204,10 @@ void SCR_DrawStats()
 
 #define STAT_LAYOUTS 13
 
-void SCR_DrawLayout(void)
+void SCR_DrawLayout()
 {
 	if (!cl.frame.playerstate.stats[STAT_LAYOUTS])
-	{
 		return;
-	}
-
 	SCR_ExecuteLayoutString(cl.layout);
 }
 
@@ -1290,7 +1252,7 @@ void SCR_UpdateScreen()
 
 	for (i = 0; i < numframes; i++)
 	{
-		R_BeginFrame(separation[i], i);
+		R_Frame_begin(separation[i], i);
 
 		if (scr_draw_loading == 2)
 		{
@@ -1387,7 +1349,7 @@ void SCR_UpdateScreen()
 		}
 	}
 
-	Renderer_EndFrame();
+	R_Frame_end();
 }
 
 static float SCR_ClampScale(float scale)
@@ -1396,20 +1358,14 @@ static float SCR_ClampScale(float scale)
 
 	f = viddef.width / 320.0f;
 	if (scale > f)
-	{
 		scale = f;
-	}
 
 	f = viddef.height / 240.0f;
 	if (scale > f)
-	{
 		scale = f;
-	}
 
 	if (scale < 1)
-	{
 		scale = 1;
-	}
 
 	return scale;
 }
@@ -1418,16 +1374,10 @@ static float SCR_GetDefaultScale()
 {
 	int i = viddef.width / 640;
 	int j = viddef.height / 240;
-
 	if (i > j)
-	{
 		i = j;
-	}
 	if (i < 1)
-	{
 		i = 1;
-	}
-
 	return i;
 }
 
@@ -1459,67 +1409,37 @@ void SCR_DrawCrosshair()
 float SCR_GetHUDScale()
 {
 	float scale;
-
 	if (!scr_initialized)
-	{
 		scale = 1;
-	}
-	else
-	if (gl_hudscale->value < 0)
-	{
+	else if (gl_hudscale->value < 0)
 		scale = SCR_GetDefaultScale();
-	}
-	else
-	if (gl_hudscale->value == 0)      /* HACK: allow scale 0 to hide the HUD */
-	{
+	else if (gl_hudscale->value == 0)      /* HACK: allow scale 0 to hide the HUD */
 		scale = 0;
-	}
 	else
-	{
 		scale = SCR_ClampScale(gl_hudscale->value);
-	}
-
 	return scale;
 }
 
 float SCR_GetConsoleScale()
 {
 	float scale;
-
 	if (!scr_initialized)
-	{
 		scale = 1;
-	}
-	else
-	if (gl_consolescale->value < 0)
-	{
+	else if (gl_consolescale->value < 0)
 		scale = SCR_GetDefaultScale();
-	}
 	else
-	{
 		scale = SCR_ClampScale(gl_consolescale->value);
-	}
-
 	return scale;
 }
 
-float SCR_GetMenuScale(void)
+float SCR_GetMenuScale()
 {
 	float scale;
-
 	if (!scr_initialized)
-	{
 		scale = 1;
-	}
-	else
-	if (gl_menuscale->value < 0)
-	{
+	else if (gl_menuscale->value < 0)
 		scale = SCR_GetDefaultScale();
-	}
 	else
-	{
 		scale = SCR_ClampScale(gl_menuscale->value);
-	}
-
 	return scale;
 }

@@ -1,6 +1,6 @@
 @echo off
-set output_path=Output\Targets\Windows-x86-32\Quake2
 set bin_path=Output\Targets\Windows-x86-32\Release\bin
+set output_path=Output\Targets\Windows-x86-32\Quake2
 mkdir %output_path%
 mkdir %output_path%\baseq2
 mkdir %output_path%\ctf

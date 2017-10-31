@@ -24,7 +24,7 @@
  * =======================================================================
  */
 
-#include "client/refresh/local.h"
+#include "client/refresh/r_private.h"
 
 void
 LoadPCX(char *origname, byte **pic, byte **palette, int *width, int *height)
@@ -55,7 +55,7 @@ LoadPCX(char *origname, byte **pic, byte **palette, int *width, int *height)
 
 	if (!raw)
 	{
-		VID_Printf(PRINT_DEVELOPER, "Bad pcx file %s\n", filename);
+		R_printf(PRINT_DEVELOPER, "Bad pcx file %s\n", filename);
 		return;
 	}
 
@@ -77,7 +77,7 @@ LoadPCX(char *origname, byte **pic, byte **palette, int *width, int *height)
 		(pcx->encoding != 1) || (pcx->bits_per_pixel != 8) ||
 		(pcx->xmax >= 640) || (pcx->ymax >= 480))
 	{
-		VID_Printf(PRINT_ALL, "Bad pcx file %s\n", filename);
+		R_printf(PRINT_ALL, "Bad pcx file %s\n", filename);
 		return;
 	}
 
@@ -128,7 +128,7 @@ LoadPCX(char *origname, byte **pic, byte **palette, int *width, int *height)
 
 	if (raw - (byte *)pcx > len)
 	{
-		VID_Printf(PRINT_DEVELOPER, "PCX file %s was malformed", filename);
+		R_printf(PRINT_DEVELOPER, "PCX file %s was malformed", filename);
 		free(*pic);
 		*pic = NULL;
 	}

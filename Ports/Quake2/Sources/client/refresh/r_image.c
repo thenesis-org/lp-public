@@ -1,52 +1,96 @@
-/*
- * Copyright (C) 1997-2001 Id Software, Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or (at
- * your option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *
- * See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
- * 02111-1307, USA.
- *
- * =======================================================================
- *
- * Texture handling
- *
- * =======================================================================
- */
+#include "client/refresh/r_private.h"
 
-#include "local.h"
+//--------------------------------------------------------------------------------
+// Scrap.
+//--------------------------------------------------------------------------------
+// Allocate all the little status bar obejcts into a single texture
+// to crutch up inefficient hardware / drivers.
 
-image_t gltextures[MAX_GLTEXTURES];
-int numgltextures;
-int base_textureid; /* gltextures[i] = base_textureid+i */
-extern qboolean scrap_dirty;
-extern byte scrap_texels[SCRAP_MAX_NB][SCRAP_WIDTH * SCRAP_HEIGHT];
+#define SCRAP_MAX_NB 1
+#define SCRAP_WIDTH 128
+#define SCRAP_HEIGHT 128
+
+static int scrap_allocated[SCRAP_MAX_NB][SCRAP_WIDTH];
+static byte scrap_texels[SCRAP_MAX_NB][SCRAP_WIDTH * SCRAP_HEIGHT];
+bool scrap_dirty;
+static int scrap_uploads;
+
+/* returns a texture number and the position inside it */
+static int Scrap_AllocBlock(int w, int h, int *x, int *y)
+{
+	int i, j;
+	int best, best2;
+	int texnum;
+
+	for (texnum = 0; texnum < SCRAP_MAX_NB; texnum++)
+	{
+		best = SCRAP_HEIGHT;
+
+		for (i = 0; i < SCRAP_WIDTH - w; i++)
+		{
+			best2 = 0;
+
+			for (j = 0; j < w; j++)
+			{
+				if (scrap_allocated[texnum][i + j] >= best)
+					break;
+				if (scrap_allocated[texnum][i + j] > best2)
+					best2 = scrap_allocated[texnum][i + j];
+			}
+
+			if (j == w)
+			{ /* this is a valid spot */
+				*x = i;
+				*y = best = best2;
+			}
+		}
+
+		if (best + h > SCRAP_HEIGHT)
+			continue;
+
+		for (i = 0; i < w; i++)
+			scrap_allocated[texnum][*x + i] = best + h;
+
+		return texnum;
+	}
+
+	return -1;
+}
+
+void Scrap_Upload()
+{
+	scrap_uploads++;
+	oglwSetCurrentTextureUnitForced(0);
+	oglwBindTextureForced(0, TEXNUM_SCRAPS);
+	R_Texture_upload8(scrap_texels[0], SCRAP_WIDTH, SCRAP_HEIGHT, true, false, false, NULL, NULL);
+	scrap_dirty = false;
+}
+
+//--------------------------------------------------------------------------------
+// Textures.
+//--------------------------------------------------------------------------------
+#define MAX_GLTEXTURES 1024
+
+#define TEXNUM_LIGHTMAPS 1024
+#define TEXNUM_SCRAPS (TEXNUM_LIGHTMAPS + LIGHTMAP_MAX_NB)
+#define TEXNUM_IMAGES (TEXNUM_SCRAPS + SCRAP_MAX_NB)
+
+static image_t gltextures[MAX_GLTEXTURES];
+static int numgltextures;
 
 static byte intensitytable[256];
-static unsigned char gammatable[256];
+static byte gammatable[256];
+static byte lightScaleTable[256];
 
-cvar_t *intensity;
+cvar_t *r_intensity;
 
 unsigned char d_8to24table[256][3];
 
-qboolean R_Upload8(byte *data, int width, int height, qboolean mipmap, qboolean is_sky);
-qboolean R_Upload32(unsigned *data, int width, int height, qboolean mipmap);
+static int gl_tex_solid_format = GL_RGB;
+static int gl_tex_alpha_format = GL_RGBA;
 
-int gl_tex_solid_format = GL_RGB;
-int gl_tex_alpha_format = GL_RGBA;
-
-int gl_filter_min = GL_LINEAR_MIPMAP_NEAREST;
-int gl_filter_max = GL_LINEAR;
+static int gl_filter_min = GL_LINEAR_MIPMAP_NEAREST;
+static int gl_filter_max = GL_LINEAR;
 
 int Draw_GetPalette();
 
@@ -117,8 +161,6 @@ typedef struct
 		} \
 	}
 
-int upload_width, upload_height;
-
 void R_TextureMode(char *string)
 {
 	int i;
@@ -127,14 +169,12 @@ void R_TextureMode(char *string)
 	for (i = 0; i < (int)NUM_GL_MODES; i++)
 	{
 		if (!Q_stricmp(modes[i].name, string))
-		{
 			break;
-		}
 	}
 
 	if (i == NUM_GL_MODES)
 	{
-		VID_Printf(PRINT_ALL, "bad filter name\n");
+		R_printf(PRINT_ALL, "bad filter name\n");
 		return;
 	}
 
@@ -144,82 +184,68 @@ void R_TextureMode(char *string)
 	/* clamp selected anisotropy */
 	if (gl_config.anisotropic)
 	{
-		if (gl_anisotropic->value > gl_config.max_anisotropy)
+		if (r_texture_anisotropy->value > gl_config.max_anisotropy)
 		{
-			Cvar_SetValue("gl_anisotropic", gl_config.max_anisotropy);
+			Cvar_SetValue("r_texture_anisotropy", gl_config.max_anisotropy);
 		}
 		else
-		if (gl_anisotropic->value < 1.0f)
+		if (r_texture_anisotropy->value < 1.0f)
 		{
-			Cvar_SetValue("gl_anisotropic", 1.0f);
+			Cvar_SetValue("r_texture_anisotropy", 1.0f);
 		}
 	}
 	else
 	{
-		Cvar_SetValue("gl_anisotropic", 0.0);
+		Cvar_SetValue("r_texture_anisotropy", 0.0);
 	}
 
 	/* change all the existing mipmap texture objects */
 	oglwSetCurrentTextureUnitForced(0);
+    float anisotropy = r_texture_anisotropy->value;
+    if (anisotropy < 1.0f)
+        anisotropy = 1.0f;
 	for (i = 0, glt = gltextures; i < numgltextures; i++, glt++)
 	{
 		if ((glt->type != it_pic) && (glt->type != it_sky))
 		{
 			oglwBindTextureForced(0, glt->texnum);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-				gl_filter_min);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
-				gl_filter_max);
-
-			/* Set anisotropic filter if supported and enabled */
-			if (gl_config.anisotropic && gl_anisotropic->value)
-			{
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT,
-					gl_anisotropic->value);
-			}
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
+			if (gl_config.anisotropic)
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
 		}
 	}
 }
 
 void R_TextureAlphaMode(char *string)
 {
-	int i;
-
+    int i;
 	for (i = 0; i < (int)NUM_GL_ALPHA_MODES; i++)
 	{
 		if (!Q_stricmp(gl_alpha_modes[i].name, string))
-		{
 			break;
-		}
 	}
-
 	if (i == NUM_GL_ALPHA_MODES)
 	{
-		VID_Printf(PRINT_ALL, "bad alpha texture mode name\n");
+		R_printf(PRINT_ALL, "bad alpha texture mode name\n");
 		return;
 	}
-
 	gl_tex_alpha_format = gl_alpha_modes[i].mode;
 }
 
 void R_TextureSolidMode(char *string)
 {
-	int i;
-
+    int i;
 	for (i = 0; i < (int)NUM_GL_SOLID_MODES; i++)
 	{
 		if (!Q_stricmp(gl_solid_modes[i].name, string))
-		{
 			break;
-		}
 	}
-
 	if (i == NUM_GL_SOLID_MODES)
 	{
-		VID_Printf(PRINT_ALL, "bad solid texture mode name\n");
+		R_printf(PRINT_ALL, "bad solid texture mode name\n");
 		return;
 	}
-
 	gl_tex_solid_format = gl_solid_modes[i].mode;
 }
 
@@ -234,43 +260,41 @@ void R_ImageList_f()
 		"PAL"
 	};
 
-	VID_Printf(PRINT_ALL, "------------------\n");
+	R_printf(PRINT_ALL, "------------------\n");
 	texels = 0;
 
 	for (i = 0, image = gltextures; i < numgltextures; i++, image++)
 	{
 		if (image->texnum <= 0)
-		{
 			continue;
-		}
 
 		texels += image->upload_width * image->upload_height;
 
 		switch (image->type)
 		{
 		case it_skin:
-			VID_Printf(PRINT_ALL, "M");
+			R_printf(PRINT_ALL, "M");
 			break;
 		case it_sprite:
-			VID_Printf(PRINT_ALL, "S");
+			R_printf(PRINT_ALL, "S");
 			break;
 		case it_wall:
-			VID_Printf(PRINT_ALL, "W");
+			R_printf(PRINT_ALL, "W");
 			break;
 		case it_pic:
-			VID_Printf(PRINT_ALL, "P");
+			R_printf(PRINT_ALL, "P");
 			break;
 		default:
-			VID_Printf(PRINT_ALL, " ");
+			R_printf(PRINT_ALL, " ");
 			break;
 		}
 
-		VID_Printf(PRINT_ALL, " %3i %3i %s: %s\n",
+		R_printf(PRINT_ALL, " %3i %3i %s: %s\n",
 			image->upload_width, image->upload_height,
 			palstrings[image->paletted], image->name);
 	}
 
-	VID_Printf(PRINT_ALL,
+	R_printf(PRINT_ALL,
 		"Total texel count (not counting mipmaps): %i\n",
 		texels);
 }
@@ -344,96 +368,67 @@ void R_FloodFillSkin(byte *skin, int skinwidth, int skinheight)
 
 void R_ResampleTexture(unsigned *in, int inwidth, int inheight, unsigned *out, int outwidth, int outheight)
 {
-	int i, j;
-	unsigned *inrow, *inrow2;
-	unsigned frac, fracstep;
 	unsigned p1[1024], p2[1024];
-	byte *pix1, *pix2, *pix3, *pix4;
 
-	fracstep = inwidth * 0x10000 / outwidth;
+	unsigned fracstep = inwidth * 0x10000 / outwidth;
+	unsigned frac = fracstep >> 2;
 
-	frac = fracstep >> 2;
-
-	for (i = 0; i < outwidth; i++)
+	for (int i = 0; i < outwidth; i++)
 	{
 		p1[i] = 4 * (frac >> 16);
 		frac += fracstep;
 	}
 
 	frac = 3 * (fracstep >> 2);
-
-	for (i = 0; i < outwidth; i++)
+	for (int i = 0; i < outwidth; i++)
 	{
 		p2[i] = 4 * (frac >> 16);
 		frac += fracstep;
 	}
 
-	for (i = 0; i < outheight; i++, out += outwidth)
+    float yScale = (float)inheight / (float)outheight;
+	for (int y = 0; y < outheight; y++, out += outwidth)
 	{
-		inrow = in + inwidth * (int)((i + 0.25) * inheight / outheight);
-		inrow2 = in + inwidth * (int)((i + 0.75) * inheight / outheight);
-
-		for (j = 0; j < outwidth; j++)
+		unsigned *inrow = in + inwidth * (int)((y + 0.25f) * yScale);
+		unsigned *inrow2 = in + inwidth * (int)((y + 0.75f) * yScale);
+		for (int j = 0; j < outwidth; j++)
 		{
-			pix1 = (byte *)inrow + p1[j];
-			pix2 = (byte *)inrow + p2[j];
-			pix3 = (byte *)inrow2 + p1[j];
-			pix4 = (byte *)inrow2 + p2[j];
-			((byte *)(out + j))[0] = (pix1[0] + pix2[0] + pix3[0] + pix4[0]) >> 2;
-			((byte *)(out + j))[1] = (pix1[1] + pix2[1] + pix3[1] + pix4[1]) >> 2;
-			((byte *)(out + j))[2] = (pix1[2] + pix2[2] + pix3[2] + pix4[2]) >> 2;
-			((byte *)(out + j))[3] = (pix1[3] + pix2[3] + pix3[3] + pix4[3]) >> 2;
+			byte *pix1 = (byte *)inrow + p1[j];
+			byte *pix2 = (byte *)inrow + p2[j];
+			byte *pix3 = (byte *)inrow2 + p1[j];
+			byte *pix4 = (byte *)inrow2 + p2[j];
+            int r = (pix1[0] + pix2[0] + pix3[0] + pix4[0]) >> 2;
+            int g = (pix1[1] + pix2[1] + pix3[1] + pix4[1]) >> 2;
+            int b = (pix1[2] + pix2[2] + pix3[2] + pix4[2]) >> 2;
+            int a = (pix1[3] + pix2[3] + pix3[3] + pix4[3]) >> 2;
+            byte *po = (byte *)(out + j);
+			po[0] = (byte)r;
+			po[1] = (byte)g;
+			po[2] = (byte)b;
+			po[3] = (byte)a;
 		}
 	}
 }
 
-/*
- * Scale up the pixel values in a
- * texture to increase the
- * lighting range
- */
-void R_LightScaleTexture(unsigned *in, int inwidth, int inheight, qboolean only_gamma)
+// Scale up the pixel values in a texture to increase the lighting range
+static void R_LightScaleTexture(unsigned *in, int inwidth, int inheight, bool only_gamma)
 {
-	if (only_gamma)
-	{
-		int i, c;
-		byte *p;
-
-		p = (byte *)in;
-
-		c = inwidth * inheight;
-
-		for (i = 0; i < c; i++, p += 4)
-		{
-			p[0] = gammatable[p[0]];
-			p[1] = gammatable[p[1]];
-			p[2] = gammatable[p[2]];
-		}
-	}
-	else
-	{
-		int i, c;
-		byte *p;
-
-		p = (byte *)in;
-
-		c = inwidth * inheight;
-
-		for (i = 0; i < c; i++, p += 4)
-		{
-			p[0] = gammatable[intensitytable[p[0]]];
-			p[1] = gammatable[intensitytable[p[1]]];
-			p[2] = gammatable[intensitytable[p[2]]];
-		}
-	}
+    byte *p = (byte *)in;
+    int n = inwidth * inheight;
+    byte *table = only_gamma ? gammatable : lightScaleTable;
+    for (int i = 0; i < n; i++, p += 4)
+    {
+        int r = table[p[0]];
+        int g = table[p[1]];
+        int b = table[p[2]];
+        p[0] = r;
+        p[1] = g;
+        p[2] = b;
+    }
 }
 
-qboolean R_Upload32Native(unsigned *data, int width, int height, qboolean mipmap)
+static bool R_Texture_checkAlpha(unsigned *data, int width, int height)
 {
-	upload_width = width;
-	upload_height = height;
-	R_LightScaleTexture(data, upload_width, upload_height, !mipmap);
-
 	bool hasAlpha = false;
 	byte *scan = ((byte *)data) + 3;
 	int c = width * height;
@@ -445,67 +440,101 @@ qboolean R_Upload32Native(unsigned *data, int width, int height, qboolean mipmap
 			break;
 		}
 	}
+    return hasAlpha;
+}
 
+void R_Texture_upload(void *data, int x, int y, int width, int height, bool fullUploadFlag, bool noFilteringFlag, bool mipmapFlag)
+{
 	#if defined(EGLW_GLES1)
-	glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, mipmap);
+    if (mipmapFlag)
+        glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, true);
 	#endif
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-	#if defined(EGLW_GLES2)
-	glGenerateMipmap(GL_TEXTURE_2D);
-	#endif
+    if (fullUploadFlag)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    else
+        glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
 	#if defined(EGLW_GLES1)
-	glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, false);
+    if (mipmapFlag)
+        glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, false);
+    #else
+    if (mipmapFlag)
+        glGenerateMipmap(GL_TEXTURE_2D);
 	#endif
 
+    if (noFilteringFlag)
+    {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        if (gl_config.anisotropic)
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0f);
+    }
+    else
+    {
+        if (mipmapFlag)
+        {
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
+        }
+        else
+        {
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_max);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
+        }
+        if (gl_config.anisotropic)
+        {
+            float anisotropy = r_texture_anisotropy->value;
+            if (anisotropy < 1.0f)
+                anisotropy = 1.0f;
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
+        }
+    }
+}
+
+static bool R_Texture_uploadWithoutResampling32(unsigned *data, int width, int height, bool noFilteringFlag, bool mipmapFlag)
+{
+	bool hasAlpha = R_Texture_checkAlpha(data, width, height);
+	R_LightScaleTexture(data, width, height, !mipmapFlag);
+    R_Texture_upload(data, 0, 0, width, height, true, noFilteringFlag, mipmapFlag);
 	return hasAlpha;
 }
 
-qboolean R_Upload32Old(unsigned *data, int width, int height, qboolean mipmap)
+static bool R_Texture_uploadWithResampling32(unsigned *data, int width, int height, bool noFilteringFlag, bool mipmapFlag, int *uploadWidth, int *uploadHeight)
 {
 	int scaled_width, scaled_height;
 
 	for (scaled_width = 1; scaled_width < width; scaled_width <<= 1)
 		;
-	if (gl_round_down->value && (scaled_width > width) && mipmap)
+	if (r_texture_rounddown->value && (scaled_width > width) && mipmapFlag)
 		scaled_width >>= 1;
 
 	for (scaled_height = 1; scaled_height < height; scaled_height <<= 1)
 		;
-	if (gl_round_down->value && (scaled_height > height) && mipmap)
+	if (r_texture_rounddown->value && (scaled_height > height) && mipmapFlag)
 		scaled_height >>= 1;
 
 	/* let people sample down the world textures for speed */
-	if (mipmap)
+	if (mipmapFlag)
 	{
-		scaled_width >>= (int)gl_picmip->value;
-		scaled_height >>= (int)gl_picmip->value;
+		scaled_width >>= (int)r_texture_scaledown->value;
+		scaled_height >>= (int)r_texture_scaledown->value;
 	}
 
-	/* don't ever bother with >256 textures */
+    // TODO: Clamp to max supported size by OpenGL.
 	if (scaled_width < 1)
 		scaled_width = 1;
-	if (scaled_width > 256)
-		scaled_width = 256;
-
+//	if (scaled_width > 256)
+//		scaled_width = 256;
 	if (scaled_height < 1)
 		scaled_height = 1;
-	if (scaled_height > 256)
-		scaled_height = 256;
+//	if (scaled_height > 256)
+//		scaled_height = 256;
 
-	upload_width = scaled_width;
-	upload_height = scaled_height;
+    if (uploadWidth)
+        *uploadWidth = scaled_width;
+    if (uploadHeight)
+        *uploadHeight = scaled_height;
 
-	bool hasAlpha = false;
-	byte *scan = ((byte *)data) + 3;
-	int c = width * height;
-	for (int i = 0; i < c; i++, scan += 4)
-	{
-		if (*scan != 255)
-		{
-			hasAlpha = true;
-			break;
-		}
-	}
+	bool hasAlpha = R_Texture_checkAlpha(data, width, height);
 
 	unsigned *scaled = NULL;
 	if (scaled_width != width || scaled_height != height)
@@ -515,59 +544,30 @@ qboolean R_Upload32Old(unsigned *data, int width, int height, qboolean mipmap)
 		data = scaled;
 	}
 
-	R_LightScaleTexture(data, scaled_width, scaled_height, !mipmap);
+	R_LightScaleTexture(data, scaled_width, scaled_height, !mipmapFlag);
 
-	#if defined(EGLW_GLES1)
-	glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, mipmap);
-	#endif
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, scaled_width, scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-	#if defined(EGLW_GLES2)
-	glGenerateMipmap(GL_TEXTURE_2D);
-	#endif
-	#if defined(EGLW_GLES1)
-	glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, false);
-	#endif
+    R_Texture_upload(data, 0, 0, scaled_width, scaled_height, true, noFilteringFlag, mipmapFlag);
 
 	free(scaled);
 
 	return hasAlpha;
 }
 
-qboolean R_Upload32(unsigned *data, int width, int height, qboolean mipmap)
+static bool R_Texture_upload32(unsigned *data, int width, int height, bool noFilteringFlag, bool mipmapFlag, int *uploadWidth, int *uploadHeight)
 {
-	qboolean res;
-
+	bool hasAlpha;
 	if (gl_config.tex_npot)
-	{
-		res = R_Upload32Native(data, width, height, mipmap);
-	}
+    {
+		hasAlpha = R_Texture_uploadWithoutResampling32(data, width, height, noFilteringFlag, mipmapFlag);
+        *uploadWidth = width;
+        *uploadHeight = height;
+    }
 	else
-	{
-		res = R_Upload32Old(data, width, height, mipmap);
-	}
-
-	if (mipmap)
-	{
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
-	}
-	else
-	{
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_max);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
-	}
-
-	if (mipmap && gl_config.anisotropic && gl_anisotropic->value)
-	{
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, gl_anisotropic->value);
-	}
-	return res;
+		hasAlpha = R_Texture_uploadWithResampling32(data, width, height, noFilteringFlag, mipmapFlag, uploadWidth, uploadHeight);
+	return hasAlpha;
 }
 
-/*
- * Returns has_alpha
- */
-qboolean R_Upload8(byte *data, int width, int height, qboolean mipmap, qboolean is_sky)
+bool R_Texture_upload8(byte *data, int width, int height, bool noFilteringFlag, bool mipmapFlag, bool skyFlag, int *uploadWidth, int *uploadHeight)
 {
 	int s = width * height;
 	unsigned *buffer = (unsigned *)malloc(s * sizeof(unsigned));
@@ -612,10 +612,10 @@ qboolean R_Upload8(byte *data, int width, int height, qboolean mipmap, qboolean 
 		buffer[i] = c;
 	}
 
-	int result = R_Upload32(buffer, width, height, mipmap);
+	bool hasAlpha = R_Texture_upload32(buffer, width, height, noFilteringFlag, mipmapFlag, uploadWidth, uploadHeight);
 
 	free(buffer);
-	return result;
+	return hasAlpha;
 }
 
 /*
@@ -625,24 +625,21 @@ image_t* R_LoadPic(char *name, byte *pic, int width, int realwidth, int height, 
 {
 	image_t *image;
 	int i;
-	qboolean nolerp = (strstr(Cvar_VariableString("gl_nolerp_list"), name) != NULL);
 
 	/* find a free image_t */
 	for (i = 0, image = gltextures; i < numgltextures; i++, image++)
 	{
 		if (!image->texnum)
-		{
 			break;
-		}
 	}
 
 	if (i == numgltextures)
 	{
 		if (numgltextures == MAX_GLTEXTURES)
 		{
-			VID_Error(ERR_DROP, "MAX_GLTEXTURES");
+			R_error(ERR_DROP, "MAX_GLTEXTURES");
+            return NULL;
 		}
-
 		numgltextures++;
 	}
 
@@ -650,7 +647,7 @@ image_t* R_LoadPic(char *name, byte *pic, int width, int realwidth, int height, 
 
 	if (Q_strlen(name) >= (int)sizeof(image->name))
 	{
-		VID_Error(ERR_DROP, "Draw_LoadPic: \"%s\" is too long", name);
+		R_error(ERR_DROP, "Draw_LoadPic: \"%s\" is too long", name);
 	}
 
 	strcpy(image->name, name);
@@ -668,30 +665,23 @@ image_t* R_LoadPic(char *name, byte *pic, int width, int realwidth, int height, 
 		R_FloodFillSkin(pic, width, height);
 	}
 
+	qboolean noFilteringFlag = (strstr(Cvar_VariableString("gl_nolerp_list"), name) != NULL);
+
 	/* load little pics into the scrap */
-	if (!nolerp && (image->type == it_pic) && (bits == 8) && (image->width < 64) && (image->height < 64))
+	if (!noFilteringFlag && (image->type == it_pic) && (bits == 8) && (image->width < 64) && (image->height < 64))
 	{
-		int x, y;
-		int i, j, k;
-		int texnum;
-
-		texnum = Scrap_AllocBlock(image->width, image->height, &x, &y);
-
+		int x = 0, y = 0;
+		int texnum = Scrap_AllocBlock(image->width, image->height, &x, &y);
 		if (texnum == -1)
 			goto nonscrap;
 
 		scrap_dirty = true;
 
 		/* copy the texels into the scrap block */
-		k = 0;
-
-		for (i = 0; i < image->height; i++)
-		{
-			for (j = 0; j < image->width; j++, k++)
-			{
+		int k = 0;
+		for (int i = 0; i < image->height; i++)
+			for (int j = 0; j < image->width; j++, k++)
 				scrap_texels[texnum][(y + i) * SCRAP_WIDTH + x + j] = pic[k];
-			}
-		}
 
 		image->texnum = TEXNUM_SCRAPS + texnum;
 		image->scrap = true;
@@ -709,20 +699,12 @@ nonscrap:
 		oglwSetCurrentTextureUnitForced(0);
 		oglwBindTextureForced(0, image->texnum);
 
+        bool skyFlag = image->type == it_sky;
+        bool mipmapFlag = (image->type != it_pic && !skyFlag);
 		if (bits == 8)
-		{
-			image->has_alpha = R_Upload8(pic, width, height,
-					(image->type != it_pic && image->type != it_sky),
-					image->type == it_sky);
-		}
+			image->has_alpha = R_Texture_upload8(pic, width, height, noFilteringFlag, mipmapFlag, skyFlag, &image->upload_width, &image->upload_height);
 		else
-		{
-			image->has_alpha = R_Upload32((unsigned *)pic, width, height,
-					(image->type != it_pic && image->type != it_sky));
-		}
-
-		image->upload_width = upload_width; /* after power of 2 and scales */
-		image->upload_height = upload_height;
+			image->has_alpha = R_Texture_upload32((unsigned *)pic, width, height, noFilteringFlag, mipmapFlag, &image->upload_width, &image->upload_height);
 		image->paletted = false;
 
 		if (realwidth && realheight)
@@ -734,7 +716,7 @@ nonscrap:
 			}
 			else
 			{
-				VID_Printf(PRINT_DEVELOPER,
+				R_printf(PRINT_DEVELOPER,
 					"Warning, image '%s' has hi-res replacement smaller than the original! (%d x %d) < (%d x %d)\n",
 					name, image->width, image->height, realwidth, realheight);
 			}
@@ -744,12 +726,6 @@ nonscrap:
 		image->sh = 1;
 		image->tl = 0;
 		image->th = 1;
-
-		if (nolerp)
-		{
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		}
 	}
 
 	return image;
@@ -805,7 +781,7 @@ image_t* R_FindImage(char *name, imagetype_t type)
 
 	if (strcmp(ext, "pcx") == 0)
 	{
-		if (gl_retexturing->value)
+		if (r_texture_retexturing->value)
 		{
 			GetPCXInfo(name, &realwidth, &realheight);
 			if (realwidth == 0)
@@ -838,7 +814,7 @@ image_t* R_FindImage(char *name, imagetype_t type)
 	else
 	if (strcmp(ext, "wal") == 0)
 	{
-		if (gl_retexturing->value)
+		if (r_texture_retexturing->value)
 		{
 			/* Get size of the original texture */
 			GetWalInfo(name, &realwidth, &realheight);
@@ -942,45 +918,58 @@ void R_FreeUnusedImages()
 
 void R_InitImages()
 {
-	// use 1/gamma so higher value is brighter, to match HW gamma settings
-	float g = 1.0f / vid_gamma->value;
-
 	registration_sequence = 1;
-
-	/* init intensity conversions */
-	intensity = Cvar_Get("intensity", "2", CVAR_ARCHIVE);
-
-	if (intensity->value <= 1)
-		Cvar_Set("intensity", "1");
-
-	gl_state.inverse_intensity = 1 / intensity->value;
 
 	Draw_GetPalette();
 
-	for (int i = 0; i < 256; i++)
-	{
-		if (g == 1 || gl_state.hwgamma)
-		{
-			gammatable[i] = (unsigned char)i;
-		}
-		else
-		{
-			float inf = 255 * powf(((float)i + 0.5f) / 255.5f, g) + 0.5f;
-			if (inf < 0)
-				inf = 0;
-			if (inf > 255)
-				inf = 255;
-			gammatable[i] = (unsigned char)inf;
-		}
-	}
+    byte *gt = gammatable;
+    {
+        // use 1/gamma so higher value is brighter, to match HW gamma settings
+        float g = 1.0f / r_gamma->value;
+        if (g == 1.0f || gl_state.hwgamma)
+        {
+            for (int i = 0; i < 256; i++)
+                gt[i] = (byte)i;
+        }
+        else
+        {
+            for (int i = 0; i < 256; i++)
+            {
+                float inf = 255 * powf(((float)i + 0.5f) / 255.5f, g) + 0.5f;
+                if (inf < 0)
+                    inf = 0;
+                if (inf > 255)
+                    inf = 255;
+                gt[i] = (byte)inf;
+            }
+        }
+    }
 
+    byte *it = intensitytable;
+    {
+        r_intensity = Cvar_Get("r_intensity", "2", CVAR_ARCHIVE);
+        float intensity = r_intensity->value;
+        if (intensity <= 1)
+        {
+            intensity = 1;
+            Cvar_SetValue("r_intensity", intensity);
+        }
+        gl_state.inverse_intensity = 1 / intensity;
+
+        for (int i = 0; i < 256; i++)
+        {
+            float j = (float)i * intensity;
+            if (j > 255)
+                j = 255;
+            it[i] = (byte)j;
+        }
+    }
+    
+    byte *lst = lightScaleTable;
 	for (int i = 0; i < 256; i++)
 	{
-		float j = (float)i * intensity->value;
-		if (j > 255)
-			j = 255;
-		intensitytable[i] = (unsigned char)j;
-	}
+        lst[i] = gt[it[i]];
+    }
 }
 
 void R_ShutdownImages()

@@ -32,10 +32,9 @@
 #include "Common/sys.h"
 #include "Networking/net.h"
 #include "Networking/protocol.h"
-#include "Rendering/draw.h"
-#include "Rendering/gl_model.h"
+#include "Rendering/r_draw.h"
+#include "Rendering/r_model.h"
 #include "Server/server.h"
-#include "Sound/cdaudio.h"
 #include "Sound/sound.h"
 
 #include <setjmp.h>
@@ -97,8 +96,6 @@ cvar_t coop = { "coop", "0" }; // 0 or 1
 
 cvar_t pausable = { "pausable", "1" };
 
-cvar_t temp1 = { "temp1", "0" };
-
 void Host_EndGame(char *message, ...)
 {
 	va_list argptr;
@@ -113,7 +110,7 @@ void Host_EndGame(char *message, ...)
 		Host_ShutdownServer(false);
 
 	if (cls.state == ca_dedicated)
-		Sys_Error("Host_EndGame: %s\n", string);                         // dedicated servers exit
+		Sys_Error("Host_EndGame: %s\n", string); // dedicated servers exit
 
 	if (cls.demonum != -1)
 		CL_NextDemo();
@@ -147,7 +144,7 @@ void Host_Error(char *error, ...)
 		Host_ShutdownServer(false);
 
 	if (cls.state == ca_dedicated)
-		Sys_Error("Host_Error: %s\n", string);                         // dedicated servers exit
+		Sys_Error("Host_Error: %s\n", string); // dedicated servers exit
 
 	CL_Disconnect();
 	cls.demonum = -1;
@@ -168,9 +165,7 @@ void Host_FindMaxClients()
 	{
 		cls.state = ca_dedicated;
 		if (i != (com_argc - 1))
-		{
 			svs.maxclients = Q_atoi(com_argv[i + 1]);
-		}
 		else
 			svs.maxclients = 8;
 	}
@@ -226,25 +221,21 @@ void Host_InitLocal()
 
 	Cvar_RegisterVariable(&pausable);
 
-	Cvar_RegisterVariable(&temp1);
-
 	Host_FindMaxClients();
 
 	host_time = 1.0; // so a think at time 0 won't get called
 }
 
-/*
-   Writes key bindings and archived cvars to config.cfg
- */
+// Writes key bindings and archived cvars to autoexec.cfg
 void Host_WriteConfiguration()
 {
-	// dedicated servers initialize the host but don't parse and set the config.cfg cvars
+	// dedicated servers initialize the host but don't parse and set the autoexec.cfg cvars
 	if (host_initialized && cls.state != ca_dedicated)
 	{
-        FILE *f = fopen(va("%s/config.cfg", com_writableGamedir), "wb");
+        FILE *f = fopen(va("%s/autoexec.cfg", com_writableGamedir), "wb");
 		if (!f)
 		{
-			Con_Printf("Couldn't write config.cfg.\n");
+			Con_Printf("Couldn't write autoexec.cfg.\n");
 			return;
 		}
 		Key_WriteBindings(f);
@@ -292,11 +283,7 @@ void SV_BroadcastPrintf(char *fmt, ...)
 }
 
 /*
-   =================
-   Host_ClientCommands
-
    Send text over to the client to be executed
-   =================
  */
 void Host_ClientCommands(char *fmt, ...)
 {
@@ -312,12 +299,8 @@ void Host_ClientCommands(char *fmt, ...)
 }
 
 /*
-   =====================
-   SV_DropClient
-
    Called when the player is getting totally kicked off the host
    if (crash = true), don't bother sending signofs
-   =====================
  */
 void SV_DropClient(qboolean crash)
 {
@@ -375,11 +358,7 @@ void SV_DropClient(qboolean crash)
 }
 
 /*
-   ==================
-   Host_ShutdownServer
-
    This only happens at the end of a game, not between levels
-   ==================
  */
 void Host_ShutdownServer(qboolean crash)
 {
@@ -638,7 +617,7 @@ void _Host_Frame(float time)
 	// update audio
 	if (cls.signon == SIGNONS)
 	{
-		S_Update(r_origin, vpn, vright, vup);
+		S_Update(r_viewOrigin, r_viewZ, r_viewRight, r_viewUp);
 		CL_DecayLights();
 	}
 	else
@@ -796,7 +775,7 @@ void Host_Init(quakeparms_t *parms)
 	Con_Printf("Exe: "__TIME__ " "__DATE__ "\n");
 	Con_Printf("%4.1f megabyte heap\n", parms->memsize / (1024 * 1024.0));
 
-	R_InitTextures(); // needed even for dedicated servers
+	R_initTextures(); // needed even for dedicated servers
 
 	if (cls.state != ca_dedicated)
 	{
@@ -854,7 +833,5 @@ void Host_Shutdown()
 	IN_Shutdown();
 
 	if (cls.state != ca_dedicated)
-	{
 		VID_Shutdown();
-	}
 }

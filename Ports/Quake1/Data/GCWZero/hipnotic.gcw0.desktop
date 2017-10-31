@@ -1,7 +1,7 @@
 [Desktop Entry]
-Name=Quake - Scourge of Armagon
+Name=Scourge of Armagon
 Type=Application
-Exec=quake-gles1 -game hipnotic
+Exec=quake-gles1 -hipnotic
 Icon=hipnotic
 Comment=Quake - Scourge of Armagon mission pack
 Terminal=false

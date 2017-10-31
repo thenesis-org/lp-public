@@ -26,7 +26,7 @@
 #include "Common/cvar.h"
 #include "Common/quakedef.h"
 #include "Common/sys.h"
-#include "Rendering/draw.h"
+#include "Rendering/r_draw.h"
 #include "Sound/sound.h"
 
 #include <stdarg.h>
@@ -70,7 +70,7 @@ qboolean con_initialized;
 
 int con_notifylines; // scan lines to clear for notify lines
 
-extern void M_Menu_Main_f();
+extern void M_Main_enter();
 
 void Con_ToggleConsole_f()
 {
@@ -84,7 +84,7 @@ void Con_ToggleConsole_f()
 		}
 		else
 		{
-			M_Menu_Main_f();
+			M_Main_enter();
 		}
 	}
 	else
@@ -180,7 +180,7 @@ void Con_Init()
 	con_debuglog = COM_CheckParm("-condebug");
 	if (con_debuglog)
 	{
-        const char *t2 = "/qconsole.log";
+        const char *t2 = "/console.log";
 		if (strlen(com_writableGamedir) < (MAXGAMEDIRLEN - strlen(t2)))
 		{
             char temp[MAXGAMEDIRLEN + 1];
@@ -330,7 +330,7 @@ void Con_Printf(char *fmt, ...)
 
 	// log all messages to file
 	if (con_debuglog)
-		Con_DebugLog(va("%s/qconsole.log", com_writableGamedir), "%s", msg);
+		Con_DebugLog(va("%s/console.log", com_writableGamedir), "%s", msg);
 
 	if (!con_initialized)
 		return;
@@ -364,7 +364,7 @@ void Con_DPrintf(char *fmt, ...)
 	char msg[MAXPRINTMSG];
 
 	if (!developer.value)
-		return;                // don't confuse non-developers with techie stuff...
+		return; // don't confuse non-developers with techie stuff...
 
 	va_start(argptr, fmt);
 	vsprintf(msg, fmt, argptr);

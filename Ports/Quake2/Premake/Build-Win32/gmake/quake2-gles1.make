@@ -68,11 +68,9 @@ OBJECTS := \
 	$(OBJDIR)/network_windows.o \
 	$(OBJDIR)/system_windows.o \
 	$(OBJDIR)/qal.o \
-	$(OBJDIR)/video.o \
 	$(OBJDIR)/audio_sdl.o \
 	$(OBJDIR)/input_sdl.o \
 	$(OBJDIR)/system_sdl.o \
-	$(OBJDIR)/video_sdl.o \
 	$(OBJDIR)/cl_cin.o \
 	$(OBJDIR)/cl_console.o \
 	$(OBJDIR)/cl_download.o \
@@ -113,14 +111,9 @@ OBJECTS := \
 	$(OBJDIR)/qmenu.o \
 	$(OBJDIR)/r_draw.o \
 	$(OBJDIR)/r_image.o \
-	$(OBJDIR)/r_light.o \
-	$(OBJDIR)/r_lightmap.o \
 	$(OBJDIR)/r_main.o \
 	$(OBJDIR)/r_mesh.o \
 	$(OBJDIR)/r_model.o \
-	$(OBJDIR)/r_scrap.o \
-	$(OBJDIR)/r_surf.o \
-	$(OBJDIR)/r_warp.o \
 	$(OBJDIR)/md2.o \
 	$(OBJDIR)/pcx.o \
 	$(OBJDIR)/sp2.o \
@@ -238,10 +231,6 @@ $(OBJDIR)/qal.o: ../../../Sources/backends/qal.c
 	@echo $(notdir $<)
 	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF $(@:%.o=%.d) -c "$<"
 
-$(OBJDIR)/video.o: ../../../Sources/backends/video.c
-	@echo $(notdir $<)
-	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF $(@:%.o=%.d) -c "$<"
-
 $(OBJDIR)/audio_sdl.o: ../../../Sources/backends/sdl/audio_sdl.c
 	@echo $(notdir $<)
 	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF $(@:%.o=%.d) -c "$<"
@@ -251,10 +240,6 @@ $(OBJDIR)/input_sdl.o: ../../../Sources/backends/sdl/input_sdl.c
 	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF $(@:%.o=%.d) -c "$<"
 
 $(OBJDIR)/system_sdl.o: ../../../Sources/backends/sdl/system_sdl.c
-	@echo $(notdir $<)
-	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF $(@:%.o=%.d) -c "$<"
-
-$(OBJDIR)/video_sdl.o: ../../../Sources/backends/sdl/video_sdl.c
 	@echo $(notdir $<)
 	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF $(@:%.o=%.d) -c "$<"
 
@@ -418,14 +403,6 @@ $(OBJDIR)/r_image.o: ../../../Sources/client/refresh/r_image.c
 	@echo $(notdir $<)
 	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF $(@:%.o=%.d) -c "$<"
 
-$(OBJDIR)/r_light.o: ../../../Sources/client/refresh/r_light.c
-	@echo $(notdir $<)
-	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF $(@:%.o=%.d) -c "$<"
-
-$(OBJDIR)/r_lightmap.o: ../../../Sources/client/refresh/r_lightmap.c
-	@echo $(notdir $<)
-	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF $(@:%.o=%.d) -c "$<"
-
 $(OBJDIR)/r_main.o: ../../../Sources/client/refresh/r_main.c
 	@echo $(notdir $<)
 	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF $(@:%.o=%.d) -c "$<"
@@ -435,18 +412,6 @@ $(OBJDIR)/r_mesh.o: ../../../Sources/client/refresh/r_mesh.c
 	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF $(@:%.o=%.d) -c "$<"
 
 $(OBJDIR)/r_model.o: ../../../Sources/client/refresh/r_model.c
-	@echo $(notdir $<)
-	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF $(@:%.o=%.d) -c "$<"
-
-$(OBJDIR)/r_scrap.o: ../../../Sources/client/refresh/r_scrap.c
-	@echo $(notdir $<)
-	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF $(@:%.o=%.d) -c "$<"
-
-$(OBJDIR)/r_surf.o: ../../../Sources/client/refresh/r_surf.c
-	@echo $(notdir $<)
-	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF $(@:%.o=%.d) -c "$<"
-
-$(OBJDIR)/r_warp.o: ../../../Sources/client/refresh/r_warp.c
 	@echo $(notdir $<)
 	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF $(@:%.o=%.d) -c "$<"
 

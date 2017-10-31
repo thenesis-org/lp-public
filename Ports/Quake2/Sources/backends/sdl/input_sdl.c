@@ -1,34 +1,7 @@
-/*
- * Copyright (C) 2010 Yamagi Burmeister
- * Copyright (C) 1997-2001 Id Software, Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or (at
- * your option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *
- * See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
- * 02111-1307, USA.
- *
- * =======================================================================
- *
- * This is the Quake II input system backend, implemented with SDL.
- *
- * =======================================================================
- */
-
 #include "backends/input.h"
 #include "client/client.h"
 #include "client/keyboard.h"
-#include "client/refresh/local.h"
+#include "client/refresh/r_private.h"
 
 #include "SDL/SDLWrapper.h"
 
@@ -335,7 +308,7 @@ bool IN_processEvent(SDL_Event *event)
 			sdlwRequestExit(true);
 			break;
 		case SDL_WINDOWEVENT_RESIZED:
-			//sdlwResize(event->window.data1, event->window.data2);
+//        case SDL_WINDOWEVENT_SIZE_CHANGED:
 			break;
 		case SDL_WINDOWEVENT_FOCUS_LOST:
 			Key_MarkAllUp();
@@ -394,8 +367,11 @@ bool IN_processEvent(SDL_Event *event)
 	case SDL_KEYUP:
 	{
         int key = IN_TranslateSDLtoQ2Key(event->key.keysym.sym);
-		bool down = (event->type == SDL_KEYDOWN);
-		Key_Event(key, down);
+        if (key > 0)
+        {
+            bool down = (event->type == SDL_KEYDOWN);
+            Key_Event(key, down);
+        }
 	}
 	break;
 
@@ -466,7 +442,7 @@ void IN_Update()
 	sdlwCheckEvents();
 
 	// Grab and ungrab the mouse if the  console or the menu is opened.
-	qboolean want_grab = (vid_fullscreen->value || input_grab->value == 1 || (input_grab->value == 2 && mouse_windowed->value));
+	bool want_grab = (r_fullscreen->value || input_grab->value == 1 || (input_grab->value == 2 && mouse_windowed->value));
 	In_Grab(want_grab);
 }
 
@@ -649,7 +625,7 @@ void IN_Init()
 	stick_curve = Cvar_Get("stick_curve", "1", CVAR_ARCHIVE);
 	stick_deadzone = Cvar_Get("stick_deadzone", "0.2", CVAR_ARCHIVE);
 
-	vid_fullscreen = Cvar_Get("vid_fullscreen", GL_FULLSCREEN_DEFAULT_STRING, CVAR_ARCHIVE);
+	r_fullscreen = Cvar_Get("r_fullscreen", GL_FULLSCREEN_DEFAULT_STRING, CVAR_ARCHIVE);
 
 	SDL_StartTextInput();
 
@@ -657,7 +633,7 @@ void IN_Init()
 	{
 		if (SDL_Init(SDL_INIT_JOYSTICK) == -1)
 		{
-			VID_Printf(PRINT_ALL, "Couldn't init SDL l_joystick: %s.\n", SDL_GetError());
+			R_printf(PRINT_ALL, "Couldn't init SDL l_joystick: %s.\n", SDL_GetError());
 		}
 		else
 		{
@@ -673,7 +649,7 @@ void IN_Init()
 							l_controller = SDL_GameControllerOpen(i);
 							if (!l_controller)
 							{
-								VID_Printf(PRINT_ALL, "Could not open gamecontroller %i: %s\n", i, SDL_GetError());
+								R_printf(PRINT_ALL, "Could not open gamecontroller %i: %s\n", i, SDL_GetError());
 							}
 						}
 					}
@@ -684,7 +660,7 @@ void IN_Init()
 							l_joystick = SDL_JoystickOpen(i);
 							if (!l_joystick)
 							{
-								VID_Printf(PRINT_ALL, "Could not open l_joystick %i: %s\n", i, SDL_GetError());
+								R_printf(PRINT_ALL, "Could not open l_joystick %i: %s\n", i, SDL_GetError());
 							}
 						}
 					}
@@ -715,7 +691,7 @@ void IN_Shutdown()
 	Com_Printf("Shutting down input.\n");
 }
 
-void In_Grab(qboolean grab)
+void In_Grab(bool grab)
 {
 	if (sdlwContext->window != NULL)
 	{
@@ -723,6 +699,6 @@ void In_Grab(qboolean grab)
 	}
 	if (SDL_SetRelativeMouseMode(grab ? SDL_TRUE : SDL_FALSE) < 0)
 	{
-		VID_Printf(PRINT_ALL, "Setting relative mouse mode failed, reason: %s\nYou should probably update to SDL 2.0.3 or newer\n", SDL_GetError());
+		R_printf(PRINT_ALL, "Setting relative mouse mode failed, reason: %s\nYou should probably update to SDL 2.0.3 or newer\n", SDL_GetError());
 	}
 }

@@ -24,31 +24,41 @@
  * =======================================================================
  */
 
-#ifndef CL_REF_H
-#define CL_REF_H
+#ifndef graphics_h
+#define graphics_h
 
-#include "client/vid.h"
 #include "common/common.h"
+
+#define R_WIDTH_MIN 320
+#define R_HEIGHT_MIN 240
+#define R_WIDTH_MIN_STRING "320"
+#define R_HEIGHT_MIN_STRING "240"
 
 #if defined(__RASPBERRY_PI__)
 #define GL_FULLSCREEN_DEFAULT 1
 #define GL_FULLSCREEN_DEFAULT_STRING "1"
 #define GL_WINDOWED_MOUSE_DEFAULT_STRING "0"
-#define GL_MODE_DEFAULT 1
-#define GL_MODE_DEFAULT_STRING "1"
 #elif defined(__GCW_ZERO__)
 #define GL_FULLSCREEN_DEFAULT 1
 #define GL_FULLSCREEN_DEFAULT_STRING "1"
 #define GL_WINDOWED_MOUSE_DEFAULT_STRING "0"
-#define GL_MODE_DEFAULT 0
-#define GL_MODE_DEFAULT_STRING "0"
 #else
 #define GL_FULLSCREEN_DEFAULT 0
 #define GL_FULLSCREEN_DEFAULT_STRING "0"
 #define GL_WINDOWED_MOUSE_DEFAULT_STRING "1"
-#define GL_MODE_DEFAULT 4
-#define GL_MODE_DEFAULT_STRING "4"
 #endif
+
+typedef struct vrect_s
+{
+	int x, y, width, height;
+} vrect_t;
+
+typedef struct
+{
+	int width, height; /* coordinates from main game */
+} viddef_t;
+
+extern viddef_t viddef; /* global video state */
 
 #define MAX_DLIGHTS 32
 #define MAX_ENTITIES 128
@@ -96,6 +106,8 @@ typedef struct entity_s
 
 	struct image_s *skin; /* NULL for inline skin */
 	int flags;
+    
+    float distanceFromCamera;
 } entity_t;
 
 typedef struct
@@ -142,26 +154,28 @@ typedef struct
 	particle_t *particles;
 } refdef_t;
 
-int R_Init();
-void R_Shutdown();
+void R_finalize();
+void R_initialize();
+void R_checkChanges();
+void R_Window_toggleFullScreen();
 
-qboolean Renderer_initializeWindow();
-
-int Renderer_GetModeNb();
-qboolean Renderer_GetModeInfo(int mode, int *width, int *height);
-
-void Renderer_EndFrame();
+void R_printf(int print_level, char *fmt, ...);
+void R_error(int err_level, char *fmt, ...);
 
 void R_SetPalette(const unsigned char *palette);
-void R_BeginFrame(float camera_separation, int eyeFrame);
-void R_RenderFrame(refdef_t *fd);
+
+void R_Frame_begin(float camera_separation, int eyeFrame);
+void R_Frame_end();
+
+void R_View_draw(refdef_t *fd);
+void R_View_setLightLevel();
 
 void R_BeginRegistration(char *map);
 void R_EndRegistration();
 
 struct model_s* R_RegisterModel(char *name);
 struct image_s* R_RegisterSkin(char *name);
-void R_SetSky(char *name, float rotate, vec3_t axis);
+void R_Sky_set(char *name, float rotate, vec3_t axis);
 struct image_s* Draw_FindPic(char *name);
 
 void Draw_GetPicSize(int *w, int *h, char *name);
