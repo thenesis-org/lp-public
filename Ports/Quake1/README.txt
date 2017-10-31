@@ -54,8 +54,9 @@ TODO
 History
 -------
 
-2017-09-02:
-- Implemented new keywoard management like in Quake 2. Non-US keyboards should be handled correctly. But binding keys does not work.
+Version 1.0:
+- Implemented new keyboard management like in Quake 2. Non-US keyboards should be handled correctly.
 - Rewritten the sound mixing. It should be faster and much cleaner. The SDL sound thread does not call any engine function anymore.
-- Draw calls have been reduced but there is still some places with useless multiple draw calls.
+- Draw calls have been reduced.
 - Fixed all warnings.
+- A lot of fixes...
