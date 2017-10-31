@@ -17,7 +17,7 @@ xcopy /y %bin_path%\libGLESv2.dll %output_path%
 xcopy /y %bin_path%\SDL2.dll %output_path%
 xcopy /y LICENSE.txt %output_path%
 xcopy /y LICENSE_POWERVR_SDK.txt %output_path%
-xcopy /y %data_path%\hipnotic\platform.cfg %output_path%\hipnotic
-xcopy /y %data_path%\id1\platform.cfg %output_path%\id1
-xcopy /y %data_path%\rogue\platform.cfg %output_path%\rogue
+xcopy /y %data_path%\hipnotic\config.cfg %output_path%\hipnotic
+xcopy /y %data_path%\id1\config.cfg %output_path%\id1
+xcopy /y %data_path%\rogue\config.cfg %output_path%\rogue
 pause

@@ -11,6 +11,6 @@ cp -f "Data/Linux/Scourge of Armagon.sh" $output_path
 cp -f "$bin_path/quake-gles1" $output_path
 cp -f "$bin_path/quake-gles2" $output_path
 cp -f "LICENSE.txt" $output_path
-cp -f "$data_path/hipnotic/platform.cfg" $output_path/hipnotic
-cp -f "$data_path/id1/platform.cfg" $output_path/id1
-cp -f "$data_path/rogue/platform.cfg" $output_path/rogue
+cp -f "$data_path/hipnotic/config.cfg" $output_path/hipnotic
+cp -f "$data_path/id1/config.cfg" $output_path/id1
+cp -f "$data_path/rogue/config.cfg" $output_path/rogue

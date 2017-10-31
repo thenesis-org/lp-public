@@ -17,6 +17,7 @@ xcopy /y %data_path%\quake2.png %output_path%
 xcopy /y %data_path%\rogue.png %output_path%
 xcopy /y %data_path%\xatrix.png %output_path%
 xcopy /y %bin_path%\quake2-gles1 %output_path%
+xcopy /y %bin_path%\quake2-gles2 %output_path%
 xcopy /y %bin_path%\baseq2\game.so %output_path%\baseq2
 xcopy /y %data_path%\baseq2\platform.cfg %output_path%\baseq2
 xcopy /y %bin_path%\ctf\game.so %output_path%\ctf

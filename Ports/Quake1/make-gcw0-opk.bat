@@ -15,8 +15,8 @@ xcopy /y %data_path%\quake.png %output_path%
 xcopy /y %data_path%\rogue.png %output_path%
 xcopy /y %bin_path%\quake-gles1 %output_path%
 xcopy /y %bin_path%\quake-gles2 %output_path%
-xcopy /y %data_path%\hipnotic\platform.cfg %output_path%\hipnotic
-xcopy /y %data_path%\id1\platform.cfg %output_path%\id1
-xcopy /y %data_path%\rogue\platform.cfg %output_path%\rogue
+xcopy /y %data_path%\hipnotic\config.cfg %output_path%\hipnotic
+xcopy /y %data_path%\id1\config.cfg %output_path%\id1
+xcopy /y %data_path%\rogue\config.cfg %output_path%\rogue
 rem mksquashfs %output_path% %output_path%\Quake2-GCWZero.opk
 pause
