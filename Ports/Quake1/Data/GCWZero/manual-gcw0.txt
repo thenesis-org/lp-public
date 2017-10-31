@@ -1,4 +1,4 @@
-Thenesis Quake v0.5 for GCW-Zero 
+Thenesis Quake v1.0 for GCW-Zero 
 
 This version is based on Quake v1.09 and GLQuake v1.0.
 
@@ -13,7 +13,7 @@ Do not copy any .cfg file ! It may cause trouble.
   /Quake
 
 Copy only the .pak files in their associated directory:
-- For original game, copy files in "baseq2" subdirectory.
+- For original game, copy files in "id1" subdirectory.
 - For "Dissolution of Eternity mission pack", copy files in "rogue" subdirectory.
 - For "Scourge of Armagon mission pack", copy files in "hipnotic" subdirectory.
 

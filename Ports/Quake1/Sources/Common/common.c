@@ -1603,7 +1603,7 @@ char* Sys_GetHomeDir()
    Sets com_gamedir, adds the directory to the head of the path,
    then loads and adds pak1.pak pak2.pak ...
  */
-void COM_AddGameDirectory(char *dir, qboolean setAsCurrentDirFlag)
+static void COM_AddGameDirectory(char *dir, qboolean setAsCurrentDirFlag)
 {
     if (setAsCurrentDirFlag)
         Q_strncpy(com_gamedir, dir, MAX_OSPATH);
@@ -1707,6 +1707,10 @@ void COM_InitFilesystem()
         COM_AddGameDirectory(com_writableGamedir, false);
         Con_Printf("Using '%s' for writing.\n", com_writableGamedir);
 	}
+
+	#if defined(__GCW_ZERO__)
+	COM_AddGameDirectory(va("%s/%s", "/media/data/Quake", com_game), false); // Internal SD card.
+	#endif
 
 	if (COM_CheckParm("-proghack"))
 		proghack = true;
