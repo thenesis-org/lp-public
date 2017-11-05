@@ -189,6 +189,7 @@ static int MenuVideo_windowSize_init(int y)
 	return y;
 }
 
+#if !defined(__RASPBERRY_PI__)
 //----------------------------------------
 // Fullscreen size.
 //----------------------------------------
@@ -216,7 +217,7 @@ static int MenuVideo_fullscreenMode_init(int y)
         int displayModeNb = SDL_GetNumDisplayModes(0);
         if (displayModeNb < 1)
         {
-            SDL_Log("SDL_GetNumDisplayModes failed: %s", SDL_GetError());
+            R_printf(PRINT_ALL, "SDL_GetNumDisplayModes failed: %s\n", SDL_GetError());
         }
         else
         {
@@ -227,7 +228,7 @@ static int MenuVideo_fullscreenMode_init(int y)
                 SDL_DisplayMode displayMode;
                 if (SDL_GetDisplayMode(0, displayModeIndex, &displayMode) != 0)
                 {
-                    SDL_Log("SDL_GetDisplayMode %i failed: %s", displayModeIndex, SDL_GetError());
+                    R_printf(PRINT_ALL, "SDL_GetDisplayMode %i failed: %s\n", displayModeIndex, SDL_GetError());
                     break;
                 }
                 int w = displayMode.w, h = displayMode.h;
@@ -308,6 +309,8 @@ static int MenuVideo_fullscreen_init(int y)
 	y += 10;
 	return y;
 }
+
+#endif
 
 //----------------------------------------
 // UI scale.
@@ -751,8 +754,10 @@ static void MenuVideo_init()
 
 	#if !defined(GL_MODE_FIXED)
 	y = MenuVideo_windowSize_init(y);
+    #if !defined(__RASPBERRY_PI__)
 	y = MenuVideo_fullscreenMode_init(y);
 	y = MenuVideo_fullscreen_init(y);
+	#endif
 	y = MenuVideo_aspect_init(y);
 	y = MenuVideo_uiscale_init(y);
 	#endif
@@ -780,8 +785,10 @@ static void MenuVideo_apply()
 {
 	#if !defined(GL_MODE_FIXED)
 	MenuVideo_windowSize_apply();
+    #if !defined(__RASPBERRY_PI__)
 	MenuVideo_fullscreenMode_apply();
 	MenuVideo_fullscreen_apply();
+	#endif
 	MenuVideo_aspect_apply();
 	MenuVideo_uiscale_apply();
 	#endif

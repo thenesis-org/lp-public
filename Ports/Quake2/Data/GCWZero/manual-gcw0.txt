@@ -32,7 +32,7 @@ You can also use the demo version of Quake 2.
 In this case you have only one pak file:
 Quake2/baseq2/pak0.pak
 
-There is some hardwired cheat keys which are enabled when the power switch is on the lock position:
+There is some hardwired cheat keys which can be used when the power switch is on the lock position:
 - START: Enable cheats when creating a server.
 - LEFT: No target.
 - RIGHT: Give all weapons, ammos and items.

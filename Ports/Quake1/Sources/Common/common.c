@@ -46,11 +46,11 @@ static char *safeargvs[NUM_SAFE_ARGVS] =
 cvar_t registered = { "registered", "0" };
 cvar_t cmdline = { "cmdline", "0", false, true };
 
-static qboolean com_modified; // set true if using non-id files
+static bool com_modified; // set true if using non-id files
 
-static qboolean proghack;
+static bool proghack;
 
-static int static_registered = 1; // only for startup check, then set
+static bool static_registered = true; // only for startup check, then set
 
 void COM_InitFilesystem();
 
@@ -65,7 +65,7 @@ char **com_argv;
 #define CMDLINE_LENGTH 256
 char com_cmdline[CMDLINE_LENGTH];
 
-qboolean standard_quake = true, rogue, hipnotic;
+bool standard_quake = true, rogue = false, hipnotic = false;
 
 // this graphic needs to be in the pak file to use registered features
 static unsigned short pop[] =
@@ -89,8 +89,6 @@ static unsigned short pop[] =
 };
 
 /*
-
-
    All of Quake's data access is through a hierchal file system, but the contents of the file system can be transparently merged from several sources.
 
    The "base directory" is the path to the directory holding the quake.exe and all game directories.  The sys_* files pass this to host_init in quakeparms_t->basedir.  This can be overridden with the "-basedir" command line parm to allow code debugging in a different directory.  The base directory is
@@ -102,11 +100,8 @@ static unsigned short pop[] =
    specified, when a file is found by the normal search path, it will be mirrored
    into the cache directory, then opened there.
 
-
-
    FIXME:
    The file "parms.txt" will be read out of the game directory and appended to the current command line arguments to allow different games to initialize startup parms differently.  This could be used to add a "-sspeed 22050" for the high quality sound edition.  Because they are added at the end, they will not override an explicit setting on the original command line.
-
  */
 
 //============================================================================
@@ -982,13 +977,10 @@ int COM_CheckParm(char *parm)
  */
 void COM_CheckRegistered()
 {
+	static_registered = false;
+
 	int h;
-	unsigned short check[128];
-	int i;
-
 	COM_OpenFile("gfx/pop.lmp", &h);
-	static_registered = 0;
-
 	if (h < 0)
 	{
 		#if WINDED
@@ -1000,17 +992,18 @@ void COM_CheckRegistered()
 		return;
 	}
 
+	unsigned short check[128];
 	Sys_FileRead(h, check, sizeof(check));
 	COM_CloseFile(h);
 
-	for (i = 0; i < 128; i++)
+	for (int i = 0; i < 128; i++)
 		if (pop[i] != (unsigned short)BigShort(check[i]))
 			Sys_Error("Corrupted data file.");
 
 
 	Cvar_Set("cmdline", com_cmdline);
 	Cvar_Set("registered", "1");
-	static_registered = 1;
+	static_registered = true;
 	Con_Printf("Playing registered version.\n");
 }
 
@@ -1034,7 +1027,7 @@ void COM_InitArgv(int argc, char **argv)
 	}
 	com_cmdline[n] = 0;
 
-	qboolean safe = false;
+	bool safe = false;
 
 	for (com_argc = 0; (com_argc < MAX_NUM_ARGVS) && (com_argc < argc); com_argc++)
 	{
@@ -1603,8 +1596,10 @@ char* Sys_GetHomeDir()
    Sets com_gamedir, adds the directory to the head of the path,
    then loads and adds pak1.pak pak2.pak ...
  */
-static void COM_AddGameDirectory(char *dir, qboolean setAsCurrentDirFlag)
+static int COM_AddGameDirectory(char *dir, bool setAsCurrentDirFlag)
 {
+    int pakCount = 0;
+    
     if (setAsCurrentDirFlag)
         Q_strncpy(com_gamedir, dir, MAX_OSPATH);
 
@@ -1628,6 +1623,7 @@ static void COM_AddGameDirectory(char *dir, qboolean setAsCurrentDirFlag)
         pack_t *pak = COM_LoadPackFile(pakfile);
 		if (!pak)
 			break;
+        pakCount++;
 		search = Hunk_Alloc(sizeof(searchpath_t));
 		search->pack = pak;
 		search->next = com_searchpaths;
@@ -1637,6 +1633,8 @@ static void COM_AddGameDirectory(char *dir, qboolean setAsCurrentDirFlag)
 	//
 	// add the contents of the parms.txt file to the end of the command line
 	//
+    
+    return pakCount;
 }
 
 void COM_removeTrailingSlash(char *s)
@@ -1668,19 +1666,39 @@ void COM_InitFilesystem()
     {
         strncpy(com_game, GAMENAME, MAX_OSPATH);
         com_game[MAX_OSPATH] = 0;
-        COM_AddGameDirectory(va("%s/%s", basedir, com_game), true);
+        if (COM_AddGameDirectory(va("%s/%s", basedir, com_game), true) == 0)
+        {
+            #if defined(__GCW_ZERO__)
+            // Only add internal SD card path if no pak file was found in the basedir path.
+            COM_AddGameDirectory(va("%s/%s", "/media/data/Quake", com_game), false); // Internal SD card.
+            #endif
+        }
     }
 	if (COM_CheckParm("-rogue"))
     {
+        Con_Printf("Rogue mission pack selected.\n");
         strncpy(com_game, "rogue", MAX_OSPATH);
         com_game[MAX_OSPATH] = 0;
-        COM_AddGameDirectory(va("%s/%s", basedir, com_game), true);
+        if (COM_AddGameDirectory(va("%s/%s", basedir, com_game), true) == 0)
+        {
+            #if defined(__GCW_ZERO__)
+            // Only add internal SD card path if no pak file was found in the basedir path.
+            COM_AddGameDirectory(va("%s/%s", "/media/data/Quake", com_game), false); // Internal SD card.
+            #endif
+        }
     }
 	if (COM_CheckParm("-hipnotic"))
     {
+        Con_Printf("Hipnotic mission pack selected.\n");
         strncpy(com_game, "hipnotic", MAX_OSPATH);
         com_game[MAX_OSPATH] = 0;
-        COM_AddGameDirectory(va("%s/%s", basedir, com_game), true);
+        if (COM_AddGameDirectory(va("%s/%s", basedir, com_game), true) == 0)
+        {
+            #if defined(__GCW_ZERO__)
+            // Only add internal SD card path if no pak file was found in the basedir path.
+            COM_AddGameDirectory(va("%s/%s", "/media/data/Quake", com_game), false); // Internal SD card.
+            #endif
+        }
     }
 
 	// -game <gamedir>
@@ -1691,7 +1709,13 @@ void COM_InitFilesystem()
 		com_modified = true;
         strncpy(com_game, com_argv[i + 1], MAX_OSPATH);
         com_game[MAX_OSPATH] = 0;
-        COM_AddGameDirectory(va("%s/%s", basedir, com_game), true);
+        if (COM_AddGameDirectory(va("%s/%s", basedir, com_game), true) == 0)
+        {
+            #if defined(__GCW_ZERO__)
+            // Only add internal SD card path if no pak file was found in the basedir path.
+            COM_AddGameDirectory(va("%s/%s", "/media/data/Quake", com_game), false); // Internal SD card.
+            #endif
+        }
 	}
 
     // Writable directory
@@ -1707,10 +1731,6 @@ void COM_InitFilesystem()
         COM_AddGameDirectory(com_writableGamedir, false);
         Con_Printf("Using '%s' for writing.\n", com_writableGamedir);
 	}
-
-	#if defined(__GCW_ZERO__)
-	COM_AddGameDirectory(va("%s/%s", "/media/data/Quake", com_game), false); // Internal SD card.
-	#endif
 
 	if (COM_CheckParm("-proghack"))
 		proghack = true;

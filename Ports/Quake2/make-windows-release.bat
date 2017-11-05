@@ -16,7 +16,7 @@ xcopy /y %bin_path%\libEGL.dll %output_path%
 xcopy /y %bin_path%\libGLES_CM.dll %output_path%
 xcopy /y %bin_path%\libGLESv2.dll %output_path%
 xcopy /y %bin_path%\SDL2.dll %output_path%
-xcopy /y %bin_path%\LICENSE_POWERVR_SDK.txt %output_path%
+xcopy /y LICENSE_POWERVR_SDK.txt %output_path%
 xcopy /y %bin_path%\baseq2\game.dll %output_path%\baseq2
 xcopy /y %bin_path%\ctf\game.dll %output_path%\ctf
 xcopy /y %bin_path%\rogue\game.dll %output_path%\rogue

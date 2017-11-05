@@ -3626,6 +3626,10 @@ static void R_Window_setIcon()
 //--------------------------------------------------------------------------------
 // Mode.
 //--------------------------------------------------------------------------------
+#if defined(__GCW_ZERO__) || defined(__RASPBERRY_PI__)
+#define R_WINDOWED_MODE_DISABLED
+#endif
+
 static void R_Window_finalize()
 {
 	SDL_ShowCursor(1);
@@ -3678,10 +3682,10 @@ static bool R_Window_getNearestDisplayMode(SDL_DisplayMode *nearestMode)
     int displayModeNb = SDL_GetNumDisplayModes(0);
     if (displayModeNb < 1)
     {
-        SDL_Log("SDL_GetNumDisplayModes failed: %s", SDL_GetError());
+        R_printf(PRINT_ALL, "SDL_GetNumDisplayModes failed: %s\n", SDL_GetError());
         return true;
     }
-    SDL_Log("SDL_GetNumDisplayModes: %i", displayModeNb);
+    R_printf(PRINT_ALL, "SDL_GetNumDisplayModes: %i\n", displayModeNb);
 
     SDL_DisplayMode bestMode;
     int bestModeIndex = -1;
@@ -3689,10 +3693,10 @@ static bool R_Window_getNearestDisplayMode(SDL_DisplayMode *nearestMode)
         SDL_DisplayMode mode;
         if (SDL_GetDisplayMode(0, i, &mode) != 0)
         {
-            SDL_Log("SDL_GetDisplayMode %i failed: %s", i, SDL_GetError());
+            R_printf(PRINT_ALL, "SDL_GetDisplayMode %i failed: %s\n", i, SDL_GetError());
             break;
         }
-        SDL_Log("Mode %i %ix%i %i bpp (%s) %i Hz", i, mode.w, mode.h, SDL_BITSPERPIXEL(mode.format), SDL_GetPixelFormatName(mode.format), mode.refresh_rate);
+        R_printf(PRINT_ALL, "Mode %i %ix%i %i bpp (%s) %i Hz\n", i, mode.w, mode.h, SDL_BITSPERPIXEL(mode.format), SDL_GetPixelFormatName(mode.format), mode.refresh_rate);
         bool nearer =
             abs(requestedWidth - mode.w) <= abs(requestedWidth - bestMode.w) && abs(requestedHeight - mode.h) <= abs(requestedHeight - bestMode.h) &&
             abs(requestedBpp - (int)SDL_BITSPERPIXEL(mode.format)) <= abs(requestedBpp - (int)SDL_BITSPERPIXEL(bestMode.format)) &&
@@ -3714,8 +3718,11 @@ static bool R_Window_getNearestDisplayMode(SDL_DisplayMode *nearestMode)
 
 static void R_Window_getMaxWindowSize(int *windowWidth, int *windowHeight)
 {
+	#if defined(__GCW_ZERO__)
+    *windowWidth = 320;
+    *windowHeight = 240;
+	#else
     int maxWindowWidth = 0, maxWindowHeight = 0;
-
     #if SDL_VERSION_ATLEAST(2, 0, 5)
     SDL_Rect rect;
     if (SDL_GetDisplayUsableBounds(0, &rect) == 0)
@@ -3732,14 +3739,22 @@ static void R_Window_getMaxWindowSize(int *windowWidth, int *windowHeight)
             maxWindowWidth = mode.w;
             maxWindowHeight = mode.h;
         }
-    }
-    
+    }   
     *windowWidth = maxWindowWidth;
     *windowHeight = maxWindowHeight;
+    #endif
 }
 
 static void R_Window_getValidWindowSize(int maxWindowWidth, int maxWindowHeight, int requestedWidth, int requestedHeight, int *windowWidth, int *windowHeight)
 {
+	#if defined(__GCW_ZERO__)
+	(void)maxWindowWidth;
+	(void)maxWindowHeight;
+	(void)requestedWidth;
+	(void)requestedHeight;
+    *windowWidth = 320;
+    *windowHeight = 240;
+	#else
     if (maxWindowWidth > 0 && requestedWidth > maxWindowWidth)
         requestedWidth = maxWindowWidth;
     if (maxWindowHeight > 0 && requestedHeight > maxWindowHeight)
@@ -3747,9 +3762,10 @@ static void R_Window_getValidWindowSize(int maxWindowWidth, int maxWindowHeight,
     if (requestedWidth < R_WIDTH_MIN)
         requestedWidth = R_WIDTH_MIN;
     if (requestedHeight < R_HEIGHT_MIN)
-        requestedHeight = R_HEIGHT_MIN;   
+        requestedHeight = R_HEIGHT_MIN;
     *windowWidth = requestedWidth;
     *windowHeight = requestedHeight;
+    #endif
 }
 
 static bool R_Window_setup()
@@ -3761,6 +3777,7 @@ static bool R_Window_setup()
         SDL_DisplayMode displayMode;
         if (R_Window_getNearestDisplayMode(&displayMode))
             return true;
+		R_printf(PRINT_ALL, "Updating window with width=%i height=%i fullscreen=1 bpp=%i frequency=%i\n", displayMode.w, displayMode.h, (int)SDL_BITSPERPIXEL(displayMode.format), displayMode.refresh_rate);
         if (SDL_SetWindowDisplayMode(sdlw->window, &displayMode) != 0)
             return true;
         SDL_SetWindowPosition(sdlw->window, 0, 0);
@@ -3770,15 +3787,18 @@ static bool R_Window_setup()
     }
     else
     {
+        int windowWidth = r_window_width->value, windowHeight = r_window_height->value;
+		R_printf(PRINT_ALL, "Updating window with width=%i height=%i fullscreen=0\n", windowWidth, windowHeight);
         if (SDL_SetWindowFullscreen(sdlw->window, 0) != 0) // This must be before SDL_SetWindowPosition() and SDL_SetWindowSize() when fullscreen is disabled !
             return true;
         int windowX = r_window_x->value, windowY = r_window_y->value;
         SDL_SetWindowPosition(sdlw->window, windowX, windowY);
-        int windowWidth = r_window_width->value, windowHeight = r_window_height->value;
         SDL_SetWindowSize(sdlw->window, windowWidth, windowHeight);
     }
     return false;
 }
+
+static void R_restart();
 
 static bool R_Window_update(bool forceFlag)
 {
@@ -3787,36 +3807,71 @@ static bool R_Window_update(bool forceFlag)
     int maxWindowWidth, maxWindowHeight;
     R_Window_getMaxWindowSize(&maxWindowWidth, &maxWindowHeight);
     
+    bool exitFlag = false;
     while (1)
     {
-        bool applyChange = false;
-
         int windowWidth, windowHeight;
         R_Window_getValidWindowSize(maxWindowWidth, maxWindowHeight, r_window_width->value, r_window_height->value, &windowWidth, &windowHeight);
 
+        bool updateNeeded = false;
+
+        #if defined(R_WINDOWED_MODE_DISABLED)
+        bool fullscreen = true;
+        #else
         bool fullscreen = r_fullscreen->value;
+		#endif
 
         if (sdlw->window == NULL)
         {
             char windowName[64];
             snprintf(windowName, sizeof(windowName), QUAKE2_COMPLETE_NAME);
             windowName[63] = 0;
+            int creationWidth = windowWidth, creationHeight = windowHeight;
+            #if defined(R_WINDOWED_MODE_DISABLED)
+            int flags = 0;
+            #else
             int flags = SDL_WINDOW_RESIZABLE;
+            #endif
+			#if !defined(__RASPBERRY_PI__)
             if (fullscreen)
-                flags |= SDL_WINDOW_FULLSCREEN;
-            if (!sdlwCreateWindow(windowName, windowWidth, windowHeight, flags))
+				flags |= SDL_WINDOW_FULLSCREEN;
+			#endif
+			R_printf(PRINT_ALL, "Creating a window with width=%i height=%i fullscreen=%i\n", creationWidth, creationHeight, fullscreen);
+            if (!sdlwCreateWindow(windowName, creationWidth, creationHeight, flags))
             {
                 R_Window_setIcon();
-                applyChange = true;
+				#if defined(__RASPBERRY_PI__)
+				r_window_width->modified = false;
+				r_window_height->modified = false;
+				#else
+                updateNeeded = true;
+                #endif
             }
+            else
+            {
+				R_printf(PRINT_ALL, "Cannot create the window\n");
+			}
         }
 
         if (sdlw->window != NULL)
         {
+			#if defined(__GCW_ZERO__)
+			exitFlag = true;
+            #elif defined(__RASPBERRY_PI__)
+			if (r_window_width->modified || r_window_height->modified)
+                updateNeeded = true;
+            if (updateNeeded)
+            {
+				// For Raspberry Pi, we cannot change the size of the framebuffer dynamically. So restart the rendering system.
+				R_printf(PRINT_ALL, "Restarting rendering system.\n");
+				R_restart();
+			}
+			exitFlag = true;
+			#else
             bool currentFullscreen = (SDL_GetWindowFlags(sdlw->window) & SDL_WINDOW_FULLSCREEN) != 0;
             if (fullscreen != currentFullscreen)
             {
-                applyChange = true;
+                updateNeeded = true;
                 if (!r_fullscreen->modified)
                 {
                     // The fullscreen state has been changed externally (by the user or the system).
@@ -3827,20 +3882,19 @@ static bool R_Window_update(bool forceFlag)
                     // The fullscreen state has been changed internally (in the menus or via the console).
                 }
             }
-            
             if (fullscreen)
             {
                 if (r_fullscreen_width->modified || r_fullscreen_height->modified || r_fullscreen_bitsPerPixel->modified || r_fullscreen_frequency->modified)
-                    applyChange = true;
+                    updateNeeded = true;
             }
-            
+
             if (!currentFullscreen)
             {
                 int currentWidth, currentHeight;
                 SDL_GetWindowSize(sdlw->window, &currentWidth, &currentHeight);
                 if (windowWidth != currentWidth || windowHeight != currentHeight)
                 {
-                    applyChange = true;
+                    updateNeeded = true;
                     if (!r_window_width->modified && !r_window_height->modified)
                     {
                         // The window size has been changed externally (by the user or the system).
@@ -3853,70 +3907,77 @@ static bool R_Window_update(bool forceFlag)
                 }
             }
 
-            if (!applyChange)
-                break;
-                
-            int windowX, windowY;
-            if (currentFullscreen)
+            if (updateNeeded)
             {
-                windowX = r_window_x->value;
-                windowY = r_window_y->value;
-            }
+				int windowX, windowY;
+				if (currentFullscreen)
+				{
+					windowX = r_window_x->value;
+					windowY = r_window_y->value;
+				}
+				else
+				{
+					SDL_GetWindowPosition(sdlw->window, &windowX, &windowY);
+				}
+				#if 0
+				if (windowX > maxWindowWidth - windowWidth)
+					windowX = maxWindowWidth - windowWidth;
+				if (windowX < 0)
+					windowX = 0;
+				if (windowY > maxWindowHeight - windowHeight)
+					windowY = maxWindowHeight - windowHeight;
+				if (windowY < 0)
+					windowY = 0;
+				#endif
+
+				Cvar_SetValue("r_window_width", windowWidth);
+				Cvar_SetValue("r_window_height", windowHeight);
+				Cvar_SetValue("r_window_x", windowX);
+				Cvar_SetValue("r_window_y", windowY);
+				Cvar_SetValue("r_fullscreen", fullscreen);
+				
+				if (R_Window_setup())
+					R_printf(PRINT_ALL, "Failed to update the window.\n");
+				else
+					exitFlag = true;
+			}
             else
-            {
-                SDL_GetWindowPosition(sdlw->window, &windowX, &windowY);
-            }
-            #if 0
-            if (windowX > maxWindowWidth - windowWidth)
-                windowX = maxWindowWidth - windowWidth;
-            if (windowX < 0)
-                windowX = 0;
-            if (windowY > maxWindowHeight - windowHeight)
-                windowY = maxWindowHeight - windowHeight;
-            if (windowY < 0)
-                windowY = 0;
+                exitFlag = true;
             #endif
-
-            Cvar_SetValue("r_window_width", windowWidth);
-            Cvar_SetValue("r_window_height", windowHeight);
-            Cvar_SetValue("r_window_x", windowX);
-            Cvar_SetValue("r_window_y", windowY);
-            Cvar_SetValue("r_fullscreen", fullscreen);
-
-            r_window_width->modified = false;
-            r_window_height->modified = false;
-            r_window_x->modified = false;
-            r_window_y->modified = false;
-            r_fullscreen->modified = false;
-            r_fullscreen_width->modified = false;
-            r_fullscreen_height->modified = false;
-            r_fullscreen_bitsPerPixel->modified = false;
-            r_fullscreen_frequency->modified = false;
-            
-            if (!R_Window_setup())
-            {
-                int effectiveWidth, effectiveHeight;
-                SDL_GetWindowSize(sdlw->window, &effectiveWidth, &effectiveHeight);
-                viddef.width = effectiveWidth;
-                viddef.height = effectiveHeight;
-                sdlwResize(effectiveWidth, effectiveHeight);
-                break;
-            }
         }
         
-        R_printf(PRINT_ALL, "Failed to create a window.\n");
+		r_window_width->modified = false;
+		r_window_height->modified = false;
+		r_window_x->modified = false;
+		r_window_y->modified = false;
+		r_fullscreen->modified = false;
+		r_fullscreen_width->modified = false;
+		r_fullscreen_height->modified = false;
+		r_fullscreen_bitsPerPixel->modified = false;
+		r_fullscreen_frequency->modified = false;
+
+		if (exitFlag)
+			break;
+
+		#if !defined(R_WINDOWED_MODE_DISABLED)
         if (fullscreen)
         {
             R_printf(PRINT_ALL, "Trying with fullscreen = %i.\n", false);
             Cvar_SetValue("r_fullscreen", false);
         }
         else
+		#endif
         {
             R_printf(PRINT_ALL, "All attempts failed\n");
             return true;
         }
     }
     
+	int effectiveWidth, effectiveHeight;
+	SDL_GetWindowSize(sdlw->window, &effectiveWidth, &effectiveHeight);
+	viddef.width = effectiveWidth;
+	viddef.height = effectiveHeight;
+	sdlwResize(effectiveWidth, effectiveHeight);
     return false;
 }
 

@@ -1,0 +1,104 @@
+To run Quake or Quake 2 and any of their mission packs, you must either have the .pak files from the commercial versions (which can be purchased from Steam), or you can use the .pak files from the demo versions (which can be legally downloaded somewhere).
+
+**Do not copy any .cfg file ! It may cause trouble. Only the .pak files !
+And ensure that all .pak file names are lower case, otherwise it won't run on non-Windows platforms !**
+
+# Quake v1.0
+Copy only the .pak files in their associated directory:
+- For original game, copy files in "id1" subdirectory.
+- For "Dissolution of Eternity mission pack", copy files in "rogue" subdirectory.
+- For "Scourge of Armagon mission pack", copy files in "hipnotic" subdirectory.
+
+With all mission packs you should have the following files:
+- Quake/id1/pak0.pak
+- Quake/id1/pak1.pak
+- Quake/hipnotic/pak0.pak
+- Quake/rogue/pak0.pak
+
+You can also use the demo version. In this case you have only one pak file:
+- Quake/id1/pak0.pak
+
+## For GCW Zero
+- To install Quake on the external SD card, unpack Quake-1.0-GCWZero.7z at the root and put .pak files in the subdirectories of Quake. To launch the game, use the file explorer and select "Quake.sh", "Dissolution of Eternity.sh" or "Scourge of Armagon.sh".
+- To install Quake on the internal SD card, install Quake-1.0-GCWZero-gles1.opk using GCW Zero Manager and put .pak files in the subdirectories of /media/data/Quake (using GCW Zero Manager too). You can launch the game from the menus.
+
+There is some hardwired cheat keys which can be used when the power switch is on the lock position:
+- START: Enable cheats when creating a server.
+- LEFT: No target.
+- RIGHT: Give all weapons, ammos and items.
+- DOWN: Enable / disable no clipping mode.
+- UP: Enable / disable god mode.
+- LEFT TRIGGER: Enable / disable draw world.
+- RIGHT TRIGGER: Enable / disable light maps.
+
+GCW Zero screenshots:
+
+![screenshot011](https://user-images.githubusercontent.com/11799758/32411444-084407ee-c1db-11e7-8606-b57d0bb52025.png) | ![screenshot021](https://user-images.githubusercontent.com/11799758/32411445-08609832-c1db-11e7-8880-cb8ec56f73e9.png)
+
+![screenshot023](https://user-images.githubusercontent.com/11799758/32411446-087db520-c1db-11e7-95f5-d6e8fdad71af.png) | ![screenshot035](https://user-images.githubusercontent.com/11799758/32411447-0899d5a2-c1db-11e7-8086-3fdaae932e32.png)
+
+![screenshot041](https://user-images.githubusercontent.com/11799758/32411448-08b7668a-c1db-11e7-924e-15cb03b48a23.png) | ![screenshot046](https://user-images.githubusercontent.com/11799758/32411449-08d2f5d0-c1db-11e7-9c45-5114beaba9f2.png)
+
+![screenshot049](https://user-images.githubusercontent.com/11799758/32411450-08ede660-c1db-11e7-9636-558763e90228.png) | ![screenshot052](https://user-images.githubusercontent.com/11799758/32411451-090945b8-c1db-11e7-93a1-cb56905c5e4b.png)
+
+![screenshot060](https://user-images.githubusercontent.com/11799758/32411452-0926a55e-c1db-11e7-8895-43dff984dedc.png) | ![screenshot062](https://user-images.githubusercontent.com/11799758/32411453-095a9648-c1db-11e7-956a-e36e3c8b13bf.png)
+
+![screenshot063](https://user-images.githubusercontent.com/11799758/32411454-0977c498-c1db-11e7-8a33-469178faaa3c.png) | ![screenshot073](https://user-images.githubusercontent.com/11799758/32411455-09934b0a-c1db-11e7-8b7e-50a199614f79.png)
+
+## Rapsberry Pi, Creator CI20 and Windows versions will be available in the next release.
+
+# Quake 2 v1.1
+Copy only the .pak files in their associated directory:
+- For original game, copy files in "baseq2" subdirectory.
+- For "Ground Zero mission pack", copy files in "rogue" subdirectory.
+- For "The Reckoning mission pack", copy files in "xatrix" subdirectory.
+- For "Capture The Flag", copy files in "ctf" subdirectory.
+
+With all mission packs you should have the following files:
+- Quake2/baseq2/pak0.pak
+- Quake2/baseq2/pak1.pak
+- Quake2/baseq2/pak2.pak
+- Quake2/ctf/pak0.pak
+- Quake2/rogue/pak0.pak
+- Quake2/xatrix/pak0.pak
+
+You can also use the demo version of Quake 2. In this case you have only one pak file:
+- Quake2/baseq2/pak0.pak
+
+For multiplayer modes, you can also copy the baseq2/players folder and subfolders from the original game into the Quake2 directory. Otherwise you will not see other players (an ugly placeholder will be shown instead).
+
+## For GCW Zero
+- To install Quake 2 on the external SD card, unpack Quake2-1.1-GCWZero.7z at the root and put .pak files in the subdirectories of Quake2. To launch the game, use the file explorer and select "Quake 2.sh", "The Reckoning.sh", "Ground Zero.sh" or "Capture The Flag.sh".
+- To install Quake 2 on the internal SD card, install Quake2-1.1-GCWZero-gles1.opk using GCW Zero Manager and put .pak files in the subdirectories of /media/data/Quake2 (using GCW Zero Manager too). You can launch the game from the menus.
+
+There is some hardwired cheat keys which are enabled when the power switch is on the lock position:
+- START: Enable cheats when creating a server.
+- LEFT: No target.
+- RIGHT: Give all weapons, ammos and items.
+- DOWN: Enable / disable no clipping mode.
+- UP: Enable / disable god mode.
+- LEFT TRIGGER: Enable / disable draw world.
+- RIGHT TRIGGER: Enable / disable light maps.
+
+GCW Zero screenshots:
+
+![screenshot080](https://user-images.githubusercontent.com/11799758/32411464-41543734-c1db-11e7-8902-bc5910ace5d9.png) | ![screenshot084](https://user-images.githubusercontent.com/11799758/32411465-4171cf74-c1db-11e7-8f8d-7b24180d3c32.png)
+
+![screenshot088](https://user-images.githubusercontent.com/11799758/32411466-4190f1ce-c1db-11e7-95bf-08f0c2dfe440.png) | ![screenshot094](https://user-images.githubusercontent.com/11799758/32411467-41b121ba-c1db-11e7-9a9c-0bbd84c87118.png)
+
+![screenshot102](https://user-images.githubusercontent.com/11799758/32411468-41d10098-c1db-11e7-8981-2254ce636d28.png) | ![screenshot103](https://user-images.githubusercontent.com/11799758/32411469-41f1910a-c1db-11e7-9930-4cf7d5932b57.png)
+
+![screenshot104](https://user-images.githubusercontent.com/11799758/32411470-420eed7c-c1db-11e7-9909-2566b803e14d.png) | ![screenshot122](https://user-images.githubusercontent.com/11799758/32411471-422e1d82-c1db-11e7-970d-0a25b56c1a30.png)
+
+![screenshot133](https://user-images.githubusercontent.com/11799758/32411472-424c44ce-c1db-11e7-9f89-be6b84c8cd70.png) | ![screenshot139](https://user-images.githubusercontent.com/11799758/32411473-426b9b26-c1db-11e7-9452-52e4871d89e3.png)
+
+![screenshot147](https://user-images.githubusercontent.com/11799758/32411475-42b54aa0-c1db-11e7-9c98-a90ac31666c4.png) | ![screenshot153](https://user-images.githubusercontent.com/11799758/32411476-42d17856-c1db-11e7-9893-d287c8234058.png)
+
+## For Raspberry Pi
+To install the game, unpack Quake2-1.1-RaspberryPi.7z and put .pak files in the subdirectories of Quake2. To launch the game, use the file explorer and select "Quake 2.sh", "The Reckoning.sh", "Ground Zero.sh" or "Capture The Flag.sh".
+
+## For Creator CI20
+To install the game, unpack Quake2-1.1-CreatorCI20.7z and put .pak files in the subdirectories of Quake2. To launch the game, use the file explorer and select "Quake 2.sh", "The Reckoning.sh", "Ground Zero.sh" or "Capture The Flag.sh".
+
+## For Windows
+To install the game, unpack Quake2-1.1-Windows-x86-32.7z and put .pak files in the subdirectories of Quake2. To launch the game, use the file explorer and select "Quake 2.bat", "The Reckoning.bat", "Ground Zero.bat" or "Capture The Flag.bat".

@@ -111,7 +111,7 @@
 
 extern struct cvar_s registered;
 
-extern qboolean standard_quake, rogue, hipnotic;
+extern bool standard_quake, rogue, hipnotic;
 
 // the host system specifies the base of the directory tree, the
 // command line parms passed to the program, and the amount of memory
